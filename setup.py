@@ -60,7 +60,7 @@ setup(
     test_suite='pygeol.tests',
     entry_points={
         'console_scripts': [
-            'pygeol = pygeol.__main__:main',
+            'pyvpdriver = pyvpdriver.__main__:main',
         ],
     },
 )
