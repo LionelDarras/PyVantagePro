@@ -12,14 +12,17 @@
 
 from __future__ import division, unicode_literals
 
-import sys
-from os import path
+import sys, os
 from logging.handlers import RotatingFileHandler
 import argparse
 
 from . import VERSION
 from .logger import LOGGER
 
+
+def touch(fname, times = None):
+    with file(fname, 'a'):
+        os.utime(fname, times)
 
 def set_file_logger(filename):
     formatter = logging.Formatter(

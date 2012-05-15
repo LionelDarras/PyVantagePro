@@ -25,7 +25,7 @@ with open(path.join(path.dirname(__file__), 'README')) as fd:
 
 
 REQUIREMENTS = [
-
+    'pyserial',
 ]
 
 if sys.version_info < (2, 7) or (3,) <= sys.version_info < (3, 2):
