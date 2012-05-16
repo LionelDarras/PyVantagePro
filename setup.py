@@ -12,25 +12,30 @@
 
 import re
 import sys
-from os import path
+import os
 from setuptools import setup, find_packages
 
-import pyvpdriver
+here = os.path.abspath(os.path.dirname(__file__))
 
-with open(path.join(path.dirname(__file__), 'pyvpriver', '__init__.py')) as fd:
+README = ''
+CHANGES = ''
+try:
+    fd = open(os.path.join(here, 'pyvpdriver', '__init__.py'))
     VERSION = re.search("VERSION = '([^']+)'", fd.read().strip()).group(1)
-
-with open(path.join(path.dirname(__file__), 'README')) as fd:
-    LONG_DESCRIPTION = fd.read()
+    README = open(os.path.join(here, 'README.rst')).read()
+    CHANGES = open(os.path.join(here, 'CHANGES.rst')).read()
+except:
+    pass
 
 
 REQUIREMENTS = [
-    'pyserial',
+#    'pyserial',
 ]
 
 if sys.version_info < (2, 7) or (3,) <= sys.version_info < (3, 2):
     # In the stdlib from 2.7:
     REQUIREMENTS.append('argparse')
+    REQUIREMENTS.append('pyserial')
 
 setup(
     name='PyVPDriver',
@@ -38,7 +43,7 @@ setup(
     url='https://github.com/SalemHarrache/PyVPDriver',
     license='BSD',
     description='Communication driver for VantagePro 2 station',
-    long_description=LONG_DESCRIPTION,
+    long_description=README + '\n\n' + CHANGES,
     author='Salem Harrache',
     author_email='contact@salem.harrache.info',
     classifiers=[
@@ -46,18 +51,14 @@ setup(
         'Intended Audience :: Science/Research',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.6',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.2',
-        'Topic :: Scientific/Engineering',
-        'Topic :: Terminals'
+        'Programming Language :: Python',
+        'Topic :: Software Development :: Libraries :: Python Modules',
+        'Topic :: Scientific/Engineering'
     ],
     packages=find_packages(),
     zip_safe=False,
     install_requires=REQUIREMENTS,
-    test_suite='pygeol.tests',
+    test_suite='pyvpdriver.tests',
     entry_points={
         'console_scripts': [
             'pyvpdriver = pyvpdriver.__main__:main',

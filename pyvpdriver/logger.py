@@ -14,8 +14,20 @@ from __future__ import division, unicode_literals
 
 import logging
 
-LOGGER = logging.getLogger('pyvpdriver')
+def init_logger():
+    logger = logging.getLogger('pyvpdriver')
 
-# Default to logging to stderr.
-LOGGER.addHandler(logging.StreamHandler())
-LOGGER.setLevel(logging.INFO)
+    # Default to logging to stderr.
+    formatter = logging.Formatter(
+        '%(asctime)s %(levelname)s: %(message)s '
+        '[in %(pathname)s:%(lineno)d]')
+
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+
+    logger.addHandler(stream_handler)
+    logger.setLevel(logging.INFO)
+
+    return logger
+
+LOGGER = init_logger()

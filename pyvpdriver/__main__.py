@@ -20,22 +20,6 @@ from . import VERSION
 from .logger import LOGGER
 
 
-def touch(fname, times = None):
-    with file(fname, 'a'):
-        os.utime(fname, times)
-
-def set_file_logger(filename):
-    formatter = logging.Formatter(
-        '%(asctime)s %(levelname)s: %(message)s '
-        '[in %(pathname)s:%(lineno)d]')
-
-    error_file_handler = \
-        RotatingFileHandler(filename, maxBytes=100000, backupCount=10)
-
-    error_file_handler.setLevel(logging.ERROR)
-    error_file_handler.setFormatter(formatter)
-    LOGGER.addHandler(error_file_handler)
-
 def main(argv=None, stdout=sys.stdout, stdin=sys.stdin):
     """Parse command-line arguments and convert the given document."""
     format_values = ['csv', 'xml']
