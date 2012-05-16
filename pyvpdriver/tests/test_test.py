@@ -21,4 +21,4 @@ def addition(x, b):
 @assert_no_logs
 def test_addition():
     """Test addition example."""
-    assert addition(3,2) == 3+5
+    assert addition(3,2) == 3+2
