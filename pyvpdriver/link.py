@@ -107,7 +107,7 @@ app = Flask(__name__)
 def hello():
     r = "GET / HTTP/1.1\r\n\r\n"
 
-    link = TCPLink("pypi.python.org", 80)
+    link = TCPLink("152.77.250.139", 101)
     link.write(r)
     1/0
 

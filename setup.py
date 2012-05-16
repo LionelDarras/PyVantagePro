@@ -29,7 +29,7 @@ except:
 
 
 REQUIREMENTS = [
-#    'pyserial',
+    'pyserial',
 ]
 
 if sys.version_info < (2, 7) or (3,) <= sys.version_info < (3, 2):
@@ -61,7 +61,8 @@ setup(
     test_suite='pyvpdriver.tests',
     entry_points={
         'console_scripts': [
-            'pyvpdriver = pyvpdriver.__main__:main',
+            'pyvpextract = pyvpdriver.__init__:extract',
+            'pyvpconfig = pyvpdriver.__init__:config',
         ],
     },
 )
