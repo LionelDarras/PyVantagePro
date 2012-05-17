@@ -3,11 +3,10 @@
     pyvpdriver
     ~~~~~~~~~~
 
-    The public API is what is accessible from this "root" packages
-    without importing sub-modules.
+    The public API and command-line interface to PyVPDriver.
 
     :copyright: Copyright 2012 Salem Harrache and contributors, see AUTHORS.
-    :license: BSD, see LICENSE for more details.
+    :license: GNU GPL v3.
 
 """
 
@@ -45,7 +44,7 @@ def config(argv=None, stdout=sys.stdout, stdin=sys.stdin):
     """Parse command-line arguments and configure VP2 device."""
 
     parser = argparse.ArgumentParser(prog='pyvpconfig',
-        description='Extract data from VantagePro 2 station')
+        description='configure VantagePro 2 station')
     parser.add_argument('--version', action='version',
                         version='PyVPDriver version %s' % VERSION,
                         help='Print PyVPDriver’s version number and exit.')

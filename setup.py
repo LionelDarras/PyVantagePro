@@ -1,7 +1,7 @@
 # coding: utf8
 """
     PyVPDriver
-    ~~~~~~~~~
+    ~~~~~~~~~~
 
     Communication driver for VantagePro 2 station
 
@@ -20,13 +20,10 @@ here = os.path.abspath(os.path.dirname(__file__))
 README = ''
 CHANGES = ''
 try:
-    fd = open(os.path.join(here, 'pyvpdriver', '__init__.py'))
-    VERSION = re.search("VERSION = '([^']+)'", fd.read().strip()).group(1)
     README = open(os.path.join(here, 'README.rst')).read()
     CHANGES = open(os.path.join(here, 'CHANGES.rst')).read()
 except:
     pass
-
 
 REQUIREMENTS = [
     'pyserial',
@@ -35,13 +32,12 @@ REQUIREMENTS = [
 if sys.version_info < (2, 7) or (3,) <= sys.version_info < (3, 2):
     # In the stdlib from 2.7:
     REQUIREMENTS.append('argparse')
-    REQUIREMENTS.append('pyserial')
 
 setup(
     name='PyVPDriver',
-    version=VERSION,
+    version='0.1',
     url='https://github.com/SalemHarrache/PyVPDriver',
-    license='BSD',
+    license='GNU GPL v3',
     description='Communication driver for VantagePro 2 station',
     long_description=README + '\n\n' + CHANGES,
     author='Salem Harrache',
@@ -62,7 +58,7 @@ setup(
     entry_points={
         'console_scripts': [
             'pyvpextract = pyvpdriver.__init__:extract',
-            'pyvpconfig = pyvpdriver.__init__:config',
+            'pyvpconfig = pyvpdriver.__init__:config'
         ],
     },
 )

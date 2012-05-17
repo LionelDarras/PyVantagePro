@@ -3,15 +3,21 @@
     pyvpdriver.device
     ~~~~~~~~~~~~~~~~~
 
+     Allows data query of Davis Vantage Pro2 devices
+
+    This part of code is inspired by PyWeather projet
+    by Patrick C. McGinty <pyweather@tuxcoder.com>
+
     :copyright: Copyright 2012 Salem Harrache and contributors, see AUTHORS.
-    :license: BSD, see LICENSE for more details.
+    :license: GNU GPL v3.
 
 """
 
-
+from logger import LOGGER
 
 class NoDeviceException(Exception):
-    pass
+    """Can not access weather station."""
+    value = __doc__
 
 class VantagePro(object):
     '''
@@ -28,23 +34,16 @@ class VantagePro(object):
     OK = '\n\rOK\n\r'
 
     def wake_up(self):
-        '''
-        Wakeup the console.
-        '''
-        log.info("send: WAKEUP")
+        """Wakeup the console."""
+        LOGGER.info("send: WAKEUP")
         for i in xrange(3):
             self.link.write('\n')
             ack = self.link.read(len(self.WAKE_ACK))
-            log.info("send: %s", ack)
+            LOGGER.info("recv: %s", ack)
             if ack == self.WAKE_ACK:
                 return
-        raise NoDeviceException('Can not access weather station')
+        raise NoDeviceException
 
     def __del__(self):
-        '''
-        close link when object is deleted.
-        '''
+        """Close link when object is deleted."""
         self.link.close()
-
-class VPData(object):
-    pass

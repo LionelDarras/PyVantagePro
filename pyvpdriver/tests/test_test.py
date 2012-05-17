@@ -1,24 +1,29 @@
 # coding: utf8
 """
-    weasyprint.tests.test_text
+    pyvpdriver.tests.test_test
     --------------------------
 
-    Test the text layout.
-
     :copyright: Copyright 2012 Salem Harrache and contributors, see AUTHORS.
-    :license: BSD, see LICENSE for details.
+    :license: GNU GPL v3.
 
 """
 
 from __future__ import division, unicode_literals
 
-from .testing_utils import assert_no_logs
-
 
 def addition(x, b):
     return x+b
 
-@assert_no_logs
-def test_addition():
-    """Test addition example."""
-    assert addition(3,2) == 3+2
+class TestTest:
+
+    def setup_class(self):
+        """Setup common data."""
+        pass
+
+    def test_positive_addition(self):
+        """Test addition example."""
+        assert addition(3,2) == 5
+
+    def test_negative_addition(self):
+        """Test addition example."""
+        assert addition(3,-3) == 0

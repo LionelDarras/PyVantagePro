@@ -5,7 +5,7 @@
     ~~~~~~~~~~~~~~~
 
     :copyright: Copyright 2012 Salem Harrache and contributors, see AUTHORS.
-    :license: BSD, see LICENSE for more details.
+    :license: GNU GPL v3.
 
 """
 from __future__ import division, unicode_literals
@@ -31,14 +31,17 @@ class TCPLink(Link):
 
     @property
     def url(self):
+        """Make a connection url from `host` and `port`."""
         return 'socket://%s:%d' % (self.host, self.port)
 
     @property
     def status(self):
+        """Return status of the link."""
         status = self._socket and not self._socket.closed
         return 'Opened' if status else 'Closed'
 
     def open(self):
+        """Open the socket."""
         if self._socket is None:
             self._socket = serial.serial_for_url(self.url)
             self._socket._timeout = self.timeout
@@ -49,41 +52,45 @@ class TCPLink(Link):
         LOGGER.info('new %s was initialized' % self)
 
     def close(self):
+        """Close the socket."""
         if self._socket is not None and self._socket.closed:
             self._socket.close()
+            LOGGER.info('Connection %s was closed' % self)
             self._socket = None
 
     @property
     def socket(self):
+        """Return an opened socket object."""
         self.open()
         return self._socket
 
     def write(self, message):
-        return self.socket.write(message)
+        """Write data to socket."""
+        num = self.socket.write(message)
+        LOGGER.info('Write : <%s> to %s' % (message[:num], self))
+        return num
 
     def read(self, size=None):
+        """Read data from socket."""
         data = ""
         if size is None:
             line = ""
             while len(data) < Link.MAX_STRING_SIZE:
-                line = self.readline()
+                line = self.socket.readline()
                 if line == "":
                     break
                 data = "%s%s" % (data, line)
         else:
             data = self.socket.read(size)
+        LOGGER.info('Read : <%s> from %s' % (data, self))
         return data
 
     def readline(self):
-        """ Read lines, implemented as generator"""
+        """ Read a line from socket."""
         return self.socket.readline()
 
-    def lines(self):
-        """ Read lines, implemented as generator"""
-        while True:
-            yield self.readline()
-
     def __del__(self):
+        """Close link when object is deleted."""
         self.close()
 
     def __unicode__(self):
@@ -97,19 +104,5 @@ class TCPLink(Link):
         return "%s" % self
 
     def __iter__(self):
+        """ Read lines, implemented as generator"""
         return iter(self._socket)
-
-
-from flask import Flask
-app = Flask(__name__)
-
-@app.route("/")
-def hello():
-    r = "GET / HTTP/1.1\r\n\r\n"
-
-    link = TCPLink("152.77.250.139", 101)
-    link.write(r)
-    1/0
-
-if __name__ == "__main__":
-    app.run(debug=True, port=9090)
