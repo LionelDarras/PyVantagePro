@@ -6,11 +6,10 @@
     Communication driver for VantagePro 2 station
 
     :copyright: Copyright 2012 Salem Harrache and contributors, see AUTHORS.
-    :license: BSD, see LICENSE for more details.
+    :license: GNU GPL v3.
 
 """
 
-import re
 import sys
 import os
 from setuptools import setup, find_packages

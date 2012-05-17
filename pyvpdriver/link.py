@@ -43,13 +43,13 @@ class TCPLink(Link):
     def open(self):
         """Open the socket."""
         if self._socket is None:
-            self._socket = serial.serial_for_url(self.url)
-            self._socket._timeout = self.timeout
+            self._socket = serial.serial_for_url(self.url,timeout=self.timeout)
+            LOGGER.info('new %s was initialized' % self)
         else:
             if self._socket.closed:
                 self._socket = None
                 self.open()
-        LOGGER.info('new %s was initialized' % self)
+
 
     def close(self):
         """Close the socket."""
@@ -67,7 +67,7 @@ class TCPLink(Link):
     def write(self, message):
         """Write data to socket."""
         num = self.socket.write(message)
-        LOGGER.info('Write : <%s> to %s' % (message[:num], self))
+        LOGGER.info('Write : <%s>' % message[:num].encode("string-escape"))
         return num
 
     def read(self, size=None):
@@ -82,12 +82,14 @@ class TCPLink(Link):
                 data = "%s%s" % (data, line)
         else:
             data = self.socket.read(size)
-        LOGGER.info('Read : <%s> from %s' % (data, self))
+        LOGGER.info('Read : <%s>' % data.encode("string-escape"))
         return data
 
     def readline(self):
         """ Read a line from socket."""
-        return self.socket.readline()
+        data = self.socket.readline()
+        LOGGER.info('Read : <%s>' % data.encode("string-escape"))
+        return data
 
     def __del__(self):
         """Close link when object is deleted."""
