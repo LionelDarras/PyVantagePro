@@ -35,13 +35,27 @@ class VantagePro(object):
 
     def wake_up(self):
         """Wakeup the console."""
-        LOGGER.info("send: WAKEUP")
+        LOGGER.info("wake up console")
         for i in xrange(3):
             self.link.write('\n')
             ack = self.link.read(len(self.WAKE_ACK))
-            LOGGER.info("recv: %s", ack)
             if ack == self.WAKE_ACK:
                 return
+        raise NoDeviceException
+
+    def run_cmd(self, cmd):
+        '''
+        write a single command, with variable number of arguments. after the
+        command, the device must return ACK
+        '''
+
+        self.wake_up()
+        LOGGER.info("try send: " + cmd)
+        self.link.write( cmd + '\n')
+        response = self.link.read()
+        LOGGER.info("read: " + response)
+        if response == self.OK or self.ACK:
+            return response
         raise NoDeviceException
 
     def __del__(self):
