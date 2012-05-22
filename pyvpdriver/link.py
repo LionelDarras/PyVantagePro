@@ -22,7 +22,7 @@ class TCPLink(Link):
     """
     TCPLink class allows TCP/IP protocol communication with File-like API.
     """
-    def __init__(self, host, port, timeout=1):
+    def __init__(self, host, port, timeout=None):
         self.timeout = timeout
         self.host = host
         self.port = port
@@ -42,7 +42,8 @@ class TCPLink(Link):
     def open(self):
         """Open the socket."""
         if self._socket is None:
-            self._socket = serial.serial_for_url(self.url,timeout=self.timeout)
+            self._socket = serial.serial_for_url(self.url, timeout=1)
+            self._socket._socket.settimeout(self.timeout)
             LOGGER.info('new %s was initialized' % self)
         else:
             if self._socket.closed:
@@ -66,28 +67,22 @@ class TCPLink(Link):
     def write(self, message):
         """Write data to socket."""
         num = self.socket.write(message)
-        LOGGER.info('Write : <%s>' % message[:num].encode("string-escape"))
+        LOGGER.info('Write : <%s>' % repr(message[:num]))
         return num
 
     def read(self, size=None):
         """Read data from socket."""
         data = ""
         if size is None:
-            line = ""
-            while len(data) < Link.MAX_STRING_SIZE:
-                line = self.socket.readline()
-                if line == "":
-                    break
-                data = "%s%s" % (data, line)
-        else:
-            data = self.socket.read(size)
-        LOGGER.info('Read : <%s>' % data.encode("string-escape"))
+            size = self.MAX_STRING_SIZE
+        data = self.socket.read(size)
+        LOGGER.info('Read : <%s>' % repr(data))
         return data
 
     def readline(self):
         """ Read a line from socket."""
         data = self.socket.readline()
-        LOGGER.info('Read : <%s>' % data.encode("string-escape"))
+        LOGGER.info('Read : <%s>' % repr(data))
         return data
 
     def __del__(self):
