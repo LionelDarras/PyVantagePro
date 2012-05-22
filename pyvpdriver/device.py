@@ -41,6 +41,8 @@ class VantagePro(object):
     WAKE_STR = '\n'
     WAKE_ACK = '\n\r'
     ACK = '\x06'
+    NACK = '\x21'
+    DONE = ''
     ESC = '\x1b'
     OK = '\n\rOK\n\r'
 
@@ -57,10 +59,8 @@ class VantagePro(object):
         raise NoDeviceException
 
     def run_cmd(self, cmd, wait_ack=None):
-        '''
-        Write a single command. If `wait_ack` is not None, the function must
-        check that acknowledgement is the one expected.
-        '''
+        '''Write a single command. If `wait_ack` is not None, the function must
+        check that acknowledgement is the one expected.'''
         if self.last_wake_up is None:
             self.wake_up()
         elif self.last_wake_up + self.WAKE_TIME < datetime.now():
@@ -72,12 +72,31 @@ class VantagePro(object):
             if wait_ack == ack:
                 return
             raise BadAckException()
+        return
 
     @cached_property
     def version(self):
+        """Return the firmware date code"""
         self.run_cmd("VER", self.OK)
         data = self.link.read()
-        return data.strip('\n\r')
+        return datetime.strptime(data.strip('\n\r'), '%b %d %Y').date()
+
+    @cached_property
+    def diagnostics(self):
+        """Return the Console Diagnostics report :
+            - Total packets received.
+            - Total packets missed.
+            - Number of resynchronizations.
+            - The largest number of packets received in a row.
+            - The number of CRC errors detected.
+        All values are recorded since midnight, or since the diagnostics are
+        cleared manualy."""
+        self.run_cmd("RXCHECK", self.OK)
+        data = self.link.read().strip('\n\r').split(' ')
+        data = [int(i) for i in data]
+        return dict(total_received = data[0], total_missed = data[1],
+                    resyn = data[2], max_received = data[3],
+                    crc_errors = data[4])
 
     def __del__(self):
         """Close link when object is deleted."""
