@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 import time
 
 from logger import LOGGER
-
+from utils import cached_property
 
 class NoDeviceException(Exception):
     """Can not access weather station."""
@@ -67,17 +67,17 @@ class VantagePro(object):
             self.wake_up()
         LOGGER.info("try send: " + cmd)
         self.link.write( cmd + '\n')
-#        time.sleep(1)
         if wait_ack is not None:
             ack = self.link.read(len(wait_ack))
             if wait_ack == ack:
                 return
             raise BadAckException()
 
-    @property
+    @cached_property
     def version(self):
         self.run_cmd("VER", self.OK)
-        return self.link.read()
+        data = self.link.read()
+        return data.strip('\n\r')
 
     def __del__(self):
         """Close link when object is deleted."""
