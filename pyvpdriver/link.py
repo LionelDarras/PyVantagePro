@@ -57,10 +57,13 @@ class TCPLink(Link):
         self.open()
         return self._socket
 
-    def write(self, message):
-        """Write all `message` to socket."""
-        num = self.socket.sendall(message)
-        LOGGER.info(u'Write : <%s>' % repr(message[:num]))
+    def write(self, data, byte=False):
+        """Write all `data` to socket."""
+        num = self.socket.sendall(data)
+        if byte:
+            LOGGER.info(u'Write : <%s>' % self.byte_to_string(data[:num]))
+        else:
+            LOGGER.info(u'Write : <%s>' % repr(data[:num]))
         return num
 
     def recv_timeout(self, size, byte=False):
@@ -69,38 +72,43 @@ class TCPLink(Link):
         This is useful for moving data which you know very little about
         (like encrypted data), so cannot check for completion in a sane way."""
         timeout = self.timeout or 1
-        self.socket.setblocking(0)
+        self._socket.setblocking(0)
+        self._socket.settimeout(0)
 
         begin = time.time()
         data = bytearray()
+        total_data = []
 
         while True:
             #if you got some data, then break after wait sec
-            if data and time.time()- begin > self.timeout:
+            if total_data and time.time()- begin>timeout:
                 break
             #if you got no data at all, wait a little longer
-            elif time.time() - begin > timeout * 2:
+            elif time.time() - begin> timeout*2:
                 break
             try:
                 # an implementation with internal buffer would be better
                 # performing...
                 data = self._socket.recv(size)
-            except socket.error:
+                if data:
+                    total_data.append(data)
+                    size = size - len(data)
+                    if size == 0:
+                        break
+                    begin = time.time()
+                else:
+                    print "bouh"
+                    time.sleep(0.1)
+            except:
                 # just need to get out of recv form time to time to check if
                 # still alive
-                continue
-            if not data:
-                time.sleep(0.1)
-            size = size - len(data)
-            if size <= 0:
-                break
-            begin = time.time()
+                pass
 
         self.socket.settimeout(self.timeout)
         if byte:
-            return data
+            return b"".join(total_data)
         else:
-            return str(data)
+            return "".join(total_data)
 
     def read(self, size=None, byte=False):
         """Read data from socket. The maximum amount of data to be received at
@@ -108,6 +116,7 @@ class TCPLink(Link):
         convert to hexadecimal array."""
         size = size or self.MAX_STRING_SIZE
         data = self.recv_timeout(size, byte)
+
         if byte:
             LOGGER.info(u'Read : <%s>' % self.byte_to_string(data))
         else:
