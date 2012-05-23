@@ -8,22 +8,23 @@
 
 """
 from __future__ import division, unicode_literals
-import serial
+
 import socket
 import time
+import serial
 
 from logger import LOGGER
 
 class Link(object):
-    """
-    Abstract base class for all links.
-    """
+    """Abstract base class for all links."""
     MAX_STRING_SIZE = 4048
+    def byte_to_string(self, byte ):
+        """Convert a byte string to it's hex string representation."""
+        return ''.join( [ "%02X " % ord( x ) for x in byte ] ).strip()
 
 class TCPLink(Link):
-    """
-    TCPLink class allows TCP/IP protocol communication with File-like API.
-    """
+    """TCPLink class allows TCP/IP protocol communication with File-like
+    API."""
     def __init__(self, host, port, timeout=1):
         self.timeout = timeout
         self.host = host
@@ -57,51 +58,61 @@ class TCPLink(Link):
         return self._socket
 
     def write(self, message):
-        """Write data to socket."""
+        """Write all `message` to socket."""
         num = self.socket.sendall(message)
-        LOGGER.info('Write : <%s>' % repr(message[:num]))
+        LOGGER.info(u'Write : <%s>' % repr(message[:num]))
         return num
 
-    def recv_timeout(self, size):
+    def recv_timeout(self, size, byte=False):
+        """Uses a non-blocking sockets in order to continue trying to get data
+        as long as the client manages to even send a single byte.
+        This is useful for moving data which you know very little about
+        (like encrypted data), so cannot check for completion in a sane way."""
         timeout = self.timeout or 1
         self.socket.setblocking(0)
-        total_data=[];data='';begin=time.time()
+
+        begin = time.time()
+        data = bytearray()
+
         while True:
             #if you got some data, then break after wait sec
-            if total_data and time.time()-begin>self.timeout:
+            if data and time.time()- begin > self.timeout:
                 break
             #if you got no data at all, wait a little longer
-            elif time.time()-begin>timeout*2:
+            elif time.time() - begin > timeout * 2:
                 break
             try:
-                data=self.socket.recv(size)
-                if data:
-                    total_data.append(data[:size])
-                    len_data = len(data)
-                    if len_data >= size:
-                        break
-                    else:
-                        size = size - len_data
-                    begin=time.time()
-                else:
-                    time.sleep(0.1)
-            except:
-                pass
+                # an implementation with internal buffer would be better
+                # performing...
+                data = self._socket.recv(size)
+            except socket.error:
+                # just need to get out of recv form time to time to check if
+                # still alive
+                continue
+            if not data:
+                time.sleep(0.1)
+            size = size - len(data)
+            if size <= 0:
+                break
+            begin = time.time()
+
         self.socket.settimeout(self.timeout)
-        return ''.join(total_data)
+        if byte:
+            return data
+        else:
+            return str(data)
 
-    def read(self, size=None):
-        """Read data from socket."""
-        data = ""
-        if size is None:
-            size=Link.MAX_STRING_SIZE
-        data = self.recv_timeout(size)
-        LOGGER.info('Read : <%s>' % repr(data))
+    def read(self, size=None, byte=False):
+        """Read data from socket. The maximum amount of data to be received at
+        once is specified by `size`. If `byte` is True, the data will be
+        convert to hexadecimal array."""
+        size = size or self.MAX_STRING_SIZE
+        data = self.recv_timeout(size, byte)
+        if byte:
+            LOGGER.info(u'Read : <%s>' % self.byte_to_string(data))
+        else:
+            LOGGER.info(u'Read : <%s>' % repr(data))
         return data
-
-    def readline(self):
-        """ Read a line from socket."""
-        pass
 
     def __del__(self):
         """Close link when object is deleted."""
@@ -116,10 +127,3 @@ class TCPLink(Link):
 
     def __repr__(self):
         return "%s" % self
-
-    def __iter__(self):
-        """ Read lines, implemented as generator"""
-        while True:
-            line = self.readline()
-            if line:
-                yield line
