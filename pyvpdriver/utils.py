@@ -7,7 +7,6 @@
     :license: GNU GPL v3.
 
 """
-
 import time
 
 class cached_property(object):
@@ -36,3 +35,8 @@ class cached_property(object):
                 cache = inst._cache = {}
             cache[self.__name__] = (value, now)
         return value
+
+
+def byte_to_int(s):
+    """return the integer value of a hexadecimal byte s"""
+    return int("%02X " % ord( s ),  16)
