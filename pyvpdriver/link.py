@@ -97,7 +97,6 @@ class TCPLink(Link):
                         break
                     begin = time.time()
                 else:
-                    print "bouh"
                     time.sleep(0.1)
             except:
                 # just need to get out of recv form time to time to check if
@@ -115,8 +114,7 @@ class TCPLink(Link):
         once is specified by `size`. If `byte` is True, the data will be
         convert to hexadecimal array."""
         size = size or self.MAX_STRING_SIZE
-        data = self.recv_timeout(size, byte)
-
+        data = self.recv_timeout(size)
         if byte:
             LOGGER.info(u'Read : <%s>' % self.byte_to_string(data))
         else:
