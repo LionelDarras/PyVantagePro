@@ -72,8 +72,8 @@ class TCPLink(Link):
         This is useful for moving data which you know very little about
         (like encrypted data), so cannot check for completion in a sane way."""
         timeout = self.timeout or 1
-        self._socket.setblocking(0)
-        self._socket.settimeout(0)
+        self.socket.settimeout(0)
+        self.socket.setblocking(0)
 
         begin = time.time()
         data = bytearray()
@@ -89,7 +89,7 @@ class TCPLink(Link):
             try:
                 # an implementation with internal buffer would be better
                 # performing...
-                data = self._socket.recv(size)
+                data = self.socket.recv(size)
                 if data:
                     total_data.append(data)
                     size = size - len(data)
@@ -102,7 +102,6 @@ class TCPLink(Link):
                 # just need to get out of recv form time to time to check if
                 # still alive
                 pass
-
         self.socket.settimeout(self.timeout)
         if byte:
             return b"".join(total_data)
