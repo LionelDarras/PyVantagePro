@@ -10,20 +10,16 @@
 
 from __future__ import division, unicode_literals
 
+from ..link import TCPLink
 
-def addition(x, b):
-    return x+b
 
-class TestTest:
+class TestTCPLink:
 
     def setup_class(self):
         """Setup common data."""
-        pass
+        self.link = TCPLink('localhost', 7)
 
-    def test_positive_addition(self):
-        """Test addition example."""
-        assert addition(3,2) == 5
-
-    def test_negative_addition(self):
-        """Test addition example."""
-        assert addition(3,-3) == 0
+    def test_hello_echo(self):
+        """Test echo."""
+        self.link.write("hello")
+        attest self.link.read(5) == "hello"
