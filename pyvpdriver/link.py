@@ -8,19 +8,18 @@
 
 """
 from __future__ import division, unicode_literals
-
+from gevent import monkey; monkey.patch_socket()
 import socket
 import time
 import serial
 
 from logger import LOGGER
+from utils import byte_to_string
 
 class Link(object):
     """Abstract base class for all links."""
     MAX_STRING_SIZE = 4048
-    def byte_to_string(self, byte ):
-        """Convert a byte string to it's hex string representation."""
-        return ''.join( [ "%02X " % ord( x ) for x in byte ] ).strip()
+
 
 class TCPLink(Link):
     """TCPLink class allows TCP/IP protocol communication with File-like
@@ -59,36 +58,29 @@ class TCPLink(Link):
 
     def write(self, data, byte=False):
         """Write all `data` to socket."""
-        num = self.socket.sendall(data)
+        self.socket.sendall(data)
         if byte:
-            LOGGER.info(u'Write : <%s>' % self.byte_to_string(data[:num]))
+            LOGGER.info(u'Write : <%s>' % byte_to_string(data))
         else:
-            LOGGER.info(u'Write : <%s>' % repr(data[:num]))
-        return num
+            LOGGER.info(u'Write : <%s>' % repr(data))
 
     def recv_timeout(self, size, byte=False):
         """Uses a non-blocking sockets in order to continue trying to get data
         as long as the client manages to even send a single byte.
         This is useful for moving data which you know very little about
         (like encrypted data), so cannot check for completion in a sane way."""
-        timeout = self.timeout or 1
-        self.socket.settimeout(0)
-        self.socket.setblocking(0)
 
+        self.socket.setblocking(0)
+        timeout = self.timeout or 1
         begin = time.time()
         data = bytearray()
         total_data = []
 
         while True:
             #if you got some data, then break after wait sec
-            if total_data and time.time()- begin>timeout:
-                break
-            #if you got no data at all, wait a little longer
-            elif time.time() - begin> timeout*2:
+            if time.time()- begin>timeout:
                 break
             try:
-                # an implementation with internal buffer would be better
-                # performing...
                 data = self.socket.recv(size)
                 if data:
                     total_data.append(data)
@@ -101,12 +93,10 @@ class TCPLink(Link):
             except:
                 # just need to get out of recv form time to time to check if
                 # still alive
+                time.sleep(0.1)
                 pass
         self.socket.settimeout(self.timeout)
-        if byte:
-            return b"".join(total_data)
-        else:
-            return "".join(total_data)
+        return b"".join(total_data)
 
     def read(self, size=None, byte=False):
         """Read data from socket. The maximum amount of data to be received at
@@ -115,7 +105,7 @@ class TCPLink(Link):
         size = size or self.MAX_STRING_SIZE
         data = self.recv_timeout(size)
         if byte:
-            LOGGER.info(u'Read : <%s>' % self.byte_to_string(data))
+            LOGGER.info(u'Read : <%s>' % byte_to_string(data))
         else:
             LOGGER.info(u'Read : <%s>' % repr(data))
         return data

@@ -12,24 +12,28 @@
     :license: GNU GPL v3.
 
 """
-from __future__ import division, unicode_literals
+from __future__ import unicode_literals
 from datetime import datetime, timedelta
 from array import array
 import time
+import struct
 
 from logger import LOGGER
-from utils import cached_property, byte_to_int
+from utils import cached_property, byte_to_int, byte_to_string
 
 class NoDeviceException(Exception):
     """Can not access weather station."""
     value = __doc__
 
+class BadAckException(Exception):
+    """The acknowledgement is not the one expected."""
+    value = __doc__
 
 class VantagePro(object):
     '''A class capable of reading raw (binary) weather data from a vantage pro
     console.'''
     # device reply commands
-    WAKE_TIME = timedelta(seconds = 2*60)
+    WAKE_TIME = 2*60
     WAKE_STR = '\n'
     WAKE_ACK = '\n\r'
     ACK = '\x06'
@@ -86,43 +90,59 @@ class VantagePro(object):
         '''Perform CRC check on raw serial data, return true if valid.
         A valid CRC == 0.'''
         if len(data) != 0 and self.get_checksum(data) == 0:
-            LOGGER.info(u'Check CRC : OK')
+            LOGGER.info("Check CRC : OK")
             return True
         else:
-            LOGGER.error(u'Check CRC : BAD')
+            LOGGER.error("Check CRC : BAD")
             return False
 
     def wake_up(self):
         """Wakeup the console."""
         for i in xrange(3):
-            LOGGER.info("try wake up console %d" % (i+1))
+            LOGGER.info("try wake up console (%d)" % (i+1))
             self.link.write(self.WAKE_STR)
             ack = self.link.read(len(self.WAKE_ACK))
             if ack == self.WAKE_ACK:
-                self.last_wake_up = datetime.now()
+                self.last_wake_up = time.time()
                 return ack
-        time.sleep(1)
-        raise NoDeviceException
+        raise NoDeviceException()
 
-    def run_cmd(self, cmd, wait_ack=None):
+    def read_cmd(self, cmd, byte, i=1):
+        """Read str or byte command to link."""
+        message = "try send (%d)" % i
+        if byte:
+            LOGGER.info("%s : %s" % (message, byte_to_string(cmd)))
+            self.link.write(cmd, byte)
+        else:
+            LOGGER.info("%s : %s" % (message, cmd))
+            self.link.write("%s\n" % cmd)
+
+
+    def run_cmd(self, cmd, wait_ack=None, byte=False):
         '''Write a single command. If `wait_ack` is not None, the function must
         check that acknowledgement is the one expected.'''
         if self.last_wake_up is None:
             self.wake_up()
-        elif self.last_wake_up + self.WAKE_TIME < datetime.now():
+        elif self.last_wake_up + self.WAKE_TIME < time.time():
             self.wake_up()
-        LOGGER.info("try send: " + cmd)
-        self.link.write("%s\n" % cmd)
-        if wait_ack is not None:
-            self.check_ack(wait_ack)
-        return
+        if wait_ack is None:
+            self.read_cmd(cmd, byte)
+        else:
+            for i in xrange(3):
+                self.read_cmd(cmd, byte)
+                if self.check_ack(wait_ack):
+                    return
+            raise BadAckException()
 
     def check_ack(self, wait_ack):
+        """Read and check ACK."""
         ack = self.link.read(len(wait_ack))
         if wait_ack == ack:
             LOGGER.info("Check ACK: OK")
+            return True
         else:
             LOGGER.error("Check ACK: BAD")
+            return False
 
     @cached_property
     def version(self):
@@ -131,7 +151,7 @@ class VantagePro(object):
         data = self.link.read()
         return datetime.strptime(data.strip('\n\r'), '%b %d %Y').date()
 
-    def gettime(self):
+    def get_time(self):
         """Return the current date on the console."""
         self.run_cmd("GETTIME", self.ACK)
         bytes = self.link.read(8, byte=True)
@@ -144,19 +164,25 @@ class VantagePro(object):
         self.verify_checksum(bytes)
         return datetime(year+1900, month, day, hour, minute, second)
 
-    def settime(self, dtime):
-        """Return the current date on the console."""
-        import struct
+    def set_time(self, dtime):
+        """Set the datetime `dtime` on the console."""
         date = struct.pack(str('>BBBBBB'), dtime.second, dtime.minute,
                                            dtime.hour, dtime.day,
                                            dtime.month, dtime.year - 1900)
         # crc in big-endian format
         checksum = struct.pack(str('>H'),self.get_checksum(date))
         self.run_cmd("SETTIME", self.ACK)
-        self.link.write(date + checksum, byte=True)
-        self.check_ack(self.ACK)
+        self.run_cmd(b"".join([date, checksum]), self.ACK, byte=True)
 
-    time = property(gettime, settime, "VantagePro data on the console")
+    time = property(get_time, set_time, "VantagePro date on the console")
+
+#    def stop_archive(self):
+#        """Disables the creation of archive records."""
+#        self.run_cmd("STOP")
+
+#    def start_archive(self):
+#        """Enables the creation of archive records."""
+#        self.run_cmd("START")
 
     @cached_property
     def diagnostics(self):
@@ -174,6 +200,10 @@ class VantagePro(object):
         return dict(total_received = data[0], total_missed = data[1],
                     resyn = data[2], max_received = data[3],
                     crc_errors = data[4])
+
+    def get_data(self):
+        """Get data."""
+        pass
 
     def __del__(self):
         """Close link when object is deleted."""

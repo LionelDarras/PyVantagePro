@@ -40,3 +40,7 @@ class cached_property(object):
 def byte_to_int(s):
     """return the integer value of a hexadecimal byte s"""
     return int("%02X " % ord( s ),  16)
+
+def byte_to_string(byte):
+    """Convert a byte string to it's hex string representation."""
+    return ''.join( [ "%02X " % ord( x ) for x in byte ] ).strip()
