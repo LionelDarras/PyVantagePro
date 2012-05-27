@@ -1,19 +1,19 @@
 # coding: utf8
-"""
+'''
     pyvpdriver.utils
     ~~~~~~~~~~~~~~~~
 
     :copyright: Copyright 2012 Salem Harrache and contributors, see AUTHORS.
     :license: GNU GPL v3.
 
-"""
+'''
 import time
 
 class cached_property(object):
-    """A decorator that converts a function into a lazy property. The
+    '''A decorator that converts a function into a lazy property. The
     function wrapped is called the first time to retrieve the result
     and then that calculated result is used the next time you access
-    the value."""
+    the value.'''
     def __init__(self, func, doc=None, ttl=300):
         self.func = func
         self.__doc__ = doc or func.__doc__
@@ -38,9 +38,9 @@ class cached_property(object):
 
 
 def byte_to_int(s):
-    """return the integer value of a hexadecimal byte s"""
+    '''return the integer value of a hexadecimal byte s'''
     return int("%02X " % ord( s ),  16)
 
 def byte_to_string(byte):
-    """Convert a byte string to it's hex string representation."""
+    '''Convert a byte string to it's hex string representation.'''
     return ''.join( [ "%02X " % ord( x ) for x in byte ] ).strip()

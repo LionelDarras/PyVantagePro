@@ -1,5 +1,5 @@
 # coding: utf8
-"""
+'''
     pyvpdriver.device
     ~~~~~~~~~~~~~~~~~
 
@@ -11,7 +11,7 @@
     :copyright: Copyright 2012 Salem Harrache and contributors, see AUTHORS.
     :license: GNU GPL v3.
 
-"""
+'''
 from __future__ import unicode_literals
 from datetime import datetime, timedelta
 from array import array
@@ -22,14 +22,14 @@ from logger import LOGGER
 from utils import cached_property, byte_to_int, byte_to_string
 
 class NoDeviceException(Exception):
-    """Can not access weather station."""
+    '''Can not access weather station.'''
     value = __doc__
 
 class BadAckException(Exception):
-    """The acknowledgement is not the one expected."""
+    '''The acknowledgement is not the one expected.'''
     value = __doc__
 
-class VantagePro(object):
+class VantagePro2(object):
     '''A class capable of reading raw (binary) weather data from a vantage pro
     console.'''
     # device reply commands
@@ -97,7 +97,7 @@ class VantagePro(object):
             return False
 
     def wake_up(self):
-        """Wakeup the console."""
+        '''Wakeup the console.'''
         for i in xrange(3):
             LOGGER.info("try wake up console (%d)" % (i+1))
             self.link.write(self.WAKE_STR)
@@ -108,7 +108,7 @@ class VantagePro(object):
         raise NoDeviceException()
 
     def read_cmd(self, cmd, byte, i=1):
-        """Read str or byte command to link."""
+        '''Read str or byte command to link.'''
         message = "try send (%d)" % i
         if byte:
             LOGGER.info("%s : %s" % (message, byte_to_string(cmd)))
@@ -135,7 +135,7 @@ class VantagePro(object):
             raise BadAckException()
 
     def check_ack(self, wait_ack):
-        """Read and check ACK."""
+        '''Read and check ACK.'''
         ack = self.link.read(len(wait_ack))
         if wait_ack == ack:
             LOGGER.info("Check ACK: OK")
@@ -146,13 +146,13 @@ class VantagePro(object):
 
     @cached_property
     def version(self):
-        """Return the firmware date code"""
+        '''Return the firmware date code'''
         self.run_cmd("VER", self.OK)
         data = self.link.read()
         return datetime.strptime(data.strip('\n\r'), '%b %d %Y').date()
 
     def get_time(self):
-        """Return the current date on the console."""
+        '''Return the current date on the console.'''
         self.run_cmd("GETTIME", self.ACK)
         bytes = self.link.read(8, byte=True)
         second = byte_to_int(bytes[0])
@@ -165,7 +165,7 @@ class VantagePro(object):
         return datetime(year+1900, month, day, hour, minute, second)
 
     def set_time(self, dtime):
-        """Set the datetime `dtime` on the console."""
+        '''Set the datetime `dtime` on the console.'''
         date = struct.pack(str('>BBBBBB'), dtime.second, dtime.minute,
                                            dtime.hour, dtime.day,
                                            dtime.month, dtime.year - 1900)
@@ -174,26 +174,18 @@ class VantagePro(object):
         self.run_cmd("SETTIME", self.ACK)
         self.run_cmd(b"".join([date, checksum]), self.ACK, byte=True)
 
-    time = property(get_time, set_time, "VantagePro date on the console")
-
-#    def stop_archive(self):
-#        """Disables the creation of archive records."""
-#        self.run_cmd("STOP")
-
-#    def start_archive(self):
-#        """Enables the creation of archive records."""
-#        self.run_cmd("START")
+    time = property(get_time, set_time, "VantagePro2 date on the console")
 
     @cached_property
     def diagnostics(self):
-        """Return the Console Diagnostics report :
+        '''Return the Console Diagnostics report :
             - Total packets received.
             - Total packets missed.
             - Number of resynchronizations.
             - The largest number of packets received in a row.
             - The number of CRC errors detected.
         All values are recorded since midnight, or since the diagnostics are
-        cleared manualy."""
+        cleared manualy.'''
         self.run_cmd("RXCHECK", self.OK)
         data = self.link.read().strip('\n\r').split(' ')
         data = [int(i) for i in data]
@@ -202,9 +194,9 @@ class VantagePro(object):
                     crc_errors = data[4])
 
     def get_data(self):
-        """Get data."""
+        '''Get data.'''
         pass
 
     def __del__(self):
-        """Close link when object is deleted."""
+        '''Close link when object is deleted.'''
         self.link.close()

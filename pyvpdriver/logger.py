@@ -15,7 +15,8 @@ from __future__ import division, unicode_literals
 import logging
 
 def init_logger():
-    logger = logging.getLogger('pyvpdriver')
+    '''Initialize logger'''
+	logger = logging.getLogger('pyvpdriver')
 
     # Default to logging to stderr.
     formatter = logging.Formatter(
