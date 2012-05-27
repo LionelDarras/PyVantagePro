@@ -14,7 +14,7 @@ import argparse
 # Make sure the logger is configured early:
 from .logger import LOGGER
 
-from .device import VantagePro
+from .device import VantagePro2
 from .link import TCPLink
 
 
