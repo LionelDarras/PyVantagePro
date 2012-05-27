@@ -1,4 +1,4 @@
-# coding: utf8
+# -*- coding: utf-8 -*- 
 """
     pyvpdriver
     ~~~~~~~~~~
@@ -9,9 +9,6 @@
     :license: GNU GPL v3.
 
 """
-
-from __future__ import division, unicode_literals
-
 import sys, os
 import argparse
 # Make sure the logger is configured early:
