@@ -8,7 +8,6 @@
 
 """
 from __future__ import division, unicode_literals
-from gevent import monkey; monkey.patch_socket()
 import socket
 import time
 import serial
