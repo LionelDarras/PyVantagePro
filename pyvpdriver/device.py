@@ -18,8 +18,8 @@ from array import array
 import time
 import struct
 
-from logger import LOGGER
-from utils import cached_property, byte_to_int, byte_to_string
+from .logger import LOGGER
+from .utils import cached_property, byte_to_int, byte_to_string
 
 class NoDeviceException(Exception):
     '''Can not access weather station.'''

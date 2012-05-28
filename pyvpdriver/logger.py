@@ -10,24 +10,23 @@
 
 """
 
-from __future__ import division, unicode_literals
+from __future__ import unicode_literals
 
 import logging
 
 def init_logger():
-	'''Initialize logger.'''
-	logger = logging.getLogger('pyvpdriver')
+    '''Initialize logger.'''
+    logger = logging.getLogger('pyvpdriver')
 
-	# Default to logging to stderr.
-	formatter = logging.Formatter(
-		'%(asctime)s %(levelname)s: %(message)s ')
+    # Default to logging to stderr.
+    formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s ')
 
-	stream_handler = logging.StreamHandler()
-	stream_handler.setFormatter(formatter)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
 
-	logger.addHandler(stream_handler)
-	logger.setLevel(logging.INFO)
+    logger.addHandler(stream_handler)
+    logger.setLevel(logging.INFO)
 
-	return logger
+    return logger
 
 LOGGER = init_logger()

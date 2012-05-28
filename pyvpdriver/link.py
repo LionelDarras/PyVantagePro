@@ -7,13 +7,13 @@
     :license: GNU GPL v3.
 
 '''
-from __future__ import division, unicode_literals
+from __future__ import unicode_literals
 import socket
 import time
 import serial
 
-from logger import LOGGER
-from utils import byte_to_string
+from .logger import LOGGER
+from .utils import byte_to_string
 
 class Link(object):
     '''Abstract base class for all links.'''
@@ -57,11 +57,16 @@ class TCPLink(Link):
 
     def write(self, data, byte=False):
         '''Write all `data` to socket.'''
-        self.socket.sendall(data)
+        try:
+            #python 3
+            self.socket.sendall(bytes(data, encoding='utf8'))
+        except:
+            #python 2
+            self.socket.sendall(data)
         if byte:
-            LOGGER.info(u'Write : <%s>' % byte_to_string(data))
+            LOGGER.info('Write : <%s>' % byte_to_string(data))
         else:
-            LOGGER.info(u'Write : <%s>' % repr(data))
+            LOGGER.info('Write : <%s>' % repr(data))
 
     def recv_timeout(self, size, byte=False):
         '''Uses a non-blocking sockets in order to continue trying to get data
@@ -95,7 +100,10 @@ class TCPLink(Link):
                 time.sleep(0.1)
                 pass
         self.socket.settimeout(self.timeout)
-        return b"".join(total_data)
+        if byte:
+            return b"".join(total_data)
+        else:
+            return b"".join(total_data).decode("utf-8")
 
     def read(self, size=None, byte=False):
         '''Read data from socket. The maximum amount of data to be received at
@@ -104,9 +112,9 @@ class TCPLink(Link):
         size = size or self.MAX_STRING_SIZE
         data = self.recv_timeout(size)
         if byte:
-            LOGGER.info(u'Read : <%s>' % byte_to_string(data))
+            LOGGER.info('Read : <%s>' % byte_to_string(data))
         else:
-            LOGGER.info(u'Read : <%s>' % repr(data))
+            LOGGER.info('Read : <%s>' % repr(data))
         return data
 
     def __del__(self):
@@ -115,10 +123,10 @@ class TCPLink(Link):
 
     def __unicode__(self):
         name = self.__class__.__name__
-        return u"<%s %s>" % (name,self.url)
+        return '%s %s' % (name, self.url)
 
     def __str__(self):
-        return str(self.__unicode__)
+        return str(self.__unicode__())
 
     def __repr__(self):
-        return "%s" % self
+        return '<%s>' % str(self.__unicode__())
