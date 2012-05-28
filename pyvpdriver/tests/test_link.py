@@ -23,3 +23,5 @@ class TestTCPLink:
         """Test echo."""
         self.link.write("hello")
         assert self.link.read(5) == "hello"
+#        self.link.write('\x06\xFF', byte=True)
+#        assert self.link.read(2, byte=True) == '\x06\xFF'
