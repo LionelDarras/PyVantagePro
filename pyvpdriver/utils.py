@@ -12,35 +12,6 @@ import math
 
 import functools, inspect
 
-def decorator(func):
-    ''' Allow to use decorator either with arguments or not. '''
-
-    def isFuncArg(*args, **kw):
-        return len(args) == 1 and len(kw) == 0 and (
-            inspect.isfunction(args[0]) or isinstance(args[0], type))
-
-    if isinstance(func, type):
-        def class_wrapper(*args, **kw):
-            if isFuncArg(*args, **kw):
-                return func()(*args, **kw) # create class before usage
-            return func(*args, **kw)
-        class_wrapper.__name__ = func.__name__
-        class_wrapper.__module__ = func.__module__
-        return class_wrapper
-
-    @functools.wraps(func)
-    def func_wrapper(*args, **kw):
-        if isFuncArg(*args, **kw):
-            return func(*args, **kw)
-
-        def functor(userFunc):
-            return func(userFunc, *args, **kw)
-
-        return functor
-
-    return func_wrapper
-
-
 class cached_property(object):
     '''A decorator that converts a function into a lazy property. The
     function wrapped is called the first time to retrieve the result
@@ -49,11 +20,12 @@ class cached_property(object):
     def __init__(self, ttl=300):
         self.ttl = ttl
 
-    def __call__(self, func, doc=None):
-        self.func = func
-        self.__doc__ = doc or func.__doc__
-        self.__name__ = func.__name__
-        self.__module__ = func.__module__
+    def __call__(self, fget, doc=None):
+        self.fget = fget
+        self.__doc__ = doc or fget.__doc__
+        self.__name__ = fget.__name__
+        self.__module__ = fget.__module__
+        return self
 
     def __get__(self, inst, owner):
         now = time.time()
@@ -62,7 +34,7 @@ class cached_property(object):
             if self.ttl > 0 and now - last_update > self.ttl:
                 raise AttributeError
         except (KeyError, AttributeError):
-            value = self.func(inst)
+            value = self.fget(inst)
             try:
                 cache = inst._cache
             except AttributeError:
@@ -91,10 +63,10 @@ class retry(object):
         self.delay = delay
 
     def __call__(self, f):
-        def wrapped_f(*args):
+        def wrapped_f(*args, **kwargs):
             for i in xrange(self.tries):
                 try:
-                    ret = f(*args)
+                    ret = f(*args, **kwargs)
                     if ret == True:
                         return True
                     elif i == self.tries - 1:

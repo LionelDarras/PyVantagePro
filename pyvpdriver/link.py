@@ -138,8 +138,8 @@ class SerialLink(Link):
       - Number: number of device, numbering starts at zero.
       - Device name: depending on operating system.
           e.g. /dev/ttyUSB0 on GNU/Linux or COM3 on Windows.'''
-    def __init__(self, port, baudrate=9600, bytesize=8, parity='N',
-                                            stopbits=1, timeout=1):
+    def __init__(self, port, baudrate=38400, bytesize=7, parity='N',
+                                            stopbits=1, timeout=5):
         self.port = port
         self.timeout = timeout
         self.baudrate = baudrate
@@ -191,48 +191,12 @@ class SerialLink(Link):
         else:
             LOGGER.info("Write : <%s>" % repr(data))
 
-    def recv_timeout(self, size, byte=False):
-        '''Uses a non-blocking serial connection in order to continue trying to
-        get data as long as the client manages to even send a single byte.
-        This is useful for moving data which you know very little about
-        (like encrypted data), so cannot check for completion in a sane way.'''
-        self.serial.timeout = 0
-        timeout = self.timeout or 1
-        begin = time.time()
-        data = bytearray()
-        total_data = []
-
-        while True:
-            #if you got some data, then break after wait sec
-            if time.time()- begin>timeout:
-                break
-            try:
-                data = self.serial.read(size)
-                if data:
-                    total_data.append(data)
-                    size = size - len(data)
-                    if size == 0:
-                        break
-                    begin = time.time()
-                else:
-                    time.sleep(0.1)
-            except:
-                # just need to get out of recv form time to time to check if
-                # still alive
-                time.sleep(0.1)
-                pass
-        self.serial.timeout = self.timeout
-        if byte:
-            return b"".join(total_data)
-        else:
-            return b"".join(total_data).decode("utf-8")
-
     def read(self, size=None, byte=False):
         '''Read data from the serial connection. The maximum amount of data
         to be received at once is specified by `size`. If `byte` is True,
         the data will be convert to byte array.'''
         size = size or self.MAX_STRING_SIZE
-        data = self.recv_timeout(size, byte)
+        data = self.serial.read(size)
         if byte:
             LOGGER.info("Read : <%s>" % byte_to_string(data))
         else:

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*- 
+# -*- coding: utf-8 -*-
 '''
     pyvpdriver.device
     ~~~~~~~~~~~~~~~~~
@@ -19,7 +19,7 @@ import time
 import struct
 
 from .logger import LOGGER
-from .utils import cached_property, byte_to_int, byte_to_string
+from .utils import cached_property, retry, byte_to_int, byte_to_string
 
 class NoDeviceException(Exception):
     '''Can not access weather station.'''
@@ -96,42 +96,34 @@ class VantagePro2(object):
             LOGGER.error("Check CRC : BAD")
             return False
 
+    @retry(tries=3, delay=1)
     def wake_up(self):
         '''Wakeup the console.'''
-        for i in xrange(3):
-            LOGGER.info("try wake up console (%d)" % (i+1))
-            self.link.write(self.WAKE_STR)
-            ack = self.link.read(len(self.WAKE_ACK))
-            if ack == self.WAKE_ACK:
-                self.last_wake_up = time.time()
-                return ack
+        LOGGER.info("try wake up console")
+        self.link.write(self.WAKE_STR)
+        if self.check_ack(self.WAKE_ACK):
+            self.last_wake_up = time.time()
+            return True
         raise NoDeviceException()
 
-    def read_cmd(self, cmd, byte, i=1):
-        '''Read str or byte command to link.'''
-        message = "try send (%d)" % i
-        if byte:
-            LOGGER.info("%s : %s" % (message, byte_to_string(cmd)))
-            self.link.write(cmd, byte)
-        else:
-            LOGGER.info("%s : %s" % (message, cmd))
-            self.link.write("%s\n" % cmd)
-
-
+    @retry(tries=3, delay=0.5)
     def run_cmd(self, cmd, wait_ack=None, byte=False):
         '''Write a single command. If `wait_ack` is not None, the function must
         check that acknowledgement is the one expected.'''
-        if self.last_wake_up is None:
+        if (self.last_wake_up is None or
+                self.last_wake_up + self.WAKE_TIME < time.time()):
             self.wake_up()
-        elif self.last_wake_up + self.WAKE_TIME < time.time():
-            self.wake_up()
-        if wait_ack is None:
-            self.read_cmd(cmd, byte)
+        if byte:
+            LOGGER.info("try send : %s" % byte_to_string(cmd))
+            self.link.write(cmd, byte)
         else:
-            for i in xrange(3):
-                self.read_cmd(cmd, byte)
-                if self.check_ack(wait_ack):
-                    return
+            LOGGER.info("try send : %s" % cmd)
+            self.link.write("%s\n" % cmd)
+        if wait_ack is None:
+            return True
+        else:
+            if self.check_ack(wait_ack):
+                return True
             raise BadAckException()
 
     def check_ack(self, wait_ack):
@@ -144,7 +136,7 @@ class VantagePro2(object):
             LOGGER.error("Check ACK: BAD")
             return False
 
-    @cached_property
+    @cached_property(ttl=3600)
     def version(self):
         '''Return the firmware date code'''
         self.run_cmd("VER", self.OK)
@@ -176,7 +168,7 @@ class VantagePro2(object):
 
     time = property(get_time, set_time, "VantagePro2 date on the console")
 
-    @cached_property
+    @cached_property(ttl=3600)
     def diagnostics(self):
         '''Return the Console Diagnostics report :
             - Total packets received.
