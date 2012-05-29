@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*- 
+# -*- coding: utf-8 -*-
 '''
     pyvpdriver
     ~~~~~~~~~~
@@ -15,7 +15,7 @@ import argparse
 from .logger import LOGGER
 
 from .device import VantagePro2
-from .link import TCPLink
+from .link import TCPLink, SerialLink
 
 
 VERSION = '0.1dev'
