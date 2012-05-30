@@ -8,9 +8,8 @@
 
 '''
 import time
-import math
-
-import functools, inspect
+import csv
+import cStringIO
 
 class cached_property(object):
     '''A decorator that converts a function into a lazy property. The
@@ -42,16 +41,6 @@ class cached_property(object):
             cache[self.__name__] = (value, now)
         return value
 
-
-def byte_to_int(s):
-    '''return the integer value of a hexadecimal byte s'''
-    return int("%02X " % ord( s ),  16)
-
-def byte_to_string(byte):
-    '''Convert a byte string to it's hex string representation.'''
-    return ''.join( [ "%02X " % ord( x ) for x in byte ] ).strip()
-
-
 class retry(object):
     '''Retries a function or method until it returns True.
     delay sets the initial delay in seconds, and backoff sets the factor by
@@ -79,3 +68,24 @@ class retry(object):
                     time.sleep(self.delay)
 
         return wrapped_f
+
+def byte_to_int(s):
+    '''return the integer value of a hexadecimal byte s'''
+    return int("%02X " % ord( s ),  16)
+
+def byte_to_string(byte):
+    '''Convert a byte string to it's hex string representation.'''
+    return ''.join( [ "%02X " % ord( x ) for x in byte ] ).strip()
+
+def dict_to_csv(items, delimiter=',', quotechar='|'):
+    '''Serialize dict to csv'''
+    output = cStringIO.StringIO()
+    csvwriter = csv.DictWriter(output, fieldnames=items[0].keys(),
+                               delimiter=delimiter, quotechar=delimiter)
+    csvwriter.writeheader()
+    for item in items:
+      csvwriter.writerow(item)
+
+    content = output.getvalue()
+    output.close()
+    return content
