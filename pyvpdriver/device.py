@@ -96,7 +96,6 @@ class VantagePro2(object):
             LOGGER.error("Check CRC : BAD")
             return False
 
-    @retry(tries=3, delay=1)
     def wake_up(self):
         '''Wakeup the console.'''
         LOGGER.info("try wake up console")
@@ -106,7 +105,7 @@ class VantagePro2(object):
             return True
         raise NoDeviceException()
 
-    @retry(tries=3, delay=0.5)
+    @retry(tries=3, delay=1)
     def run_cmd(self, cmd, wait_ack=None, byte=False):
         '''Write a single command. If `wait_ack` is not None, the function must
         check that acknowledgement is the one expected.'''
@@ -187,6 +186,9 @@ class VantagePro2(object):
 
     def get_data(self):
         '''Get data.'''
+        # test
+        items = [{"name":"salem", "age":23}, {"name":"melinda", "age":21}]
+        return items
         pass
 
     def __del__(self):
