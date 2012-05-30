@@ -7,22 +7,36 @@
     :license: GNU GPL v3.
 
 '''
+import sys
+import os
 import time
 import csv
-try:
-    #python 2
-    import cStringIO as StringIO
-except:
-    #python 3
+if sys.version_info[0] >= 3:
+    # Python 3
     import io as StringIO
+else:
+    # Python 2
+    import cStringIO as StringIO
 
 from xml.dom.minidom import parseString
 
+
 class cached_property(object):
-    '''A decorator that converts a function into a lazy property. The
-    function wrapped is called the first time to retrieve the result
-    and then that calculated result is used the next time you access
-    the value.'''
+    '''A decorator that converts a function into a lazy property evaluated
+    only once within TTL period. The function wrapped is called the first
+    time to retrieve the result and then that calculated result is used
+    the next time you access the value.
+
+    The default time-to-live (TTL) is 300 seconds (5 minutes). Set the TTL to
+    zero for the cached value to never expire.
+
+    To expire a cached property value manually just do::
+
+        del instance._cache[<property name>]
+
+    Stolen from:
+    http://wiki.python.org/moin/PythonDecoratorLibrary#Cached_Properties
+    '''
     def __init__(self, ttl=300):
         self.ttl = ttl
 
@@ -86,7 +100,7 @@ def byte_to_string(byte):
 
 def dict_to_csv(items, delimiter=',', quotechar='|'):
     '''Serialize list of dictionaries to csv'''
-    output = cStringIO.StringIO()
+    output = StringIO.StringIO()
     csvwriter = csv.DictWriter(output, fieldnames=items[0].keys(),
                                delimiter=delimiter, quotechar=delimiter)
     csvwriter.writeheader()

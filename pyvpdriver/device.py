@@ -193,4 +193,7 @@ class VantagePro2(object):
 
     def __del__(self):
         '''Close link when object is deleted.'''
-        self.link.close()
+        try:
+            self.link.close()
+        except:
+            pass
