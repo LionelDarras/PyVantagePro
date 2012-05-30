@@ -16,6 +16,8 @@ except:
     #python 3
     import io as StringIO
 
+from xml.dom.minidom import parseString
+
 class cached_property(object):
     '''A decorator that converts a function into a lazy property. The
     function wrapped is called the first time to retrieve the result
@@ -83,7 +85,7 @@ def byte_to_string(byte):
     return ''.join( [ "%02X " % ord( x ) for x in byte ] ).strip()
 
 def dict_to_csv(items, delimiter=',', quotechar='|'):
-    '''Serialize dict to csv'''
+    '''Serialize list of dictionaries to csv'''
     output = cStringIO.StringIO()
     csvwriter = csv.DictWriter(output, fieldnames=items[0].keys(),
                                delimiter=delimiter, quotechar=delimiter)
@@ -94,3 +96,14 @@ def dict_to_csv(items, delimiter=',', quotechar='|'):
     content = output.getvalue()
     output.close()
     return content
+
+def dict_to_xml(items, root="vantagepro2"):
+    '''Serialize a list of dictionaries to XML'''
+    xml = ''
+    for i, item in enumerate(items):
+        xml = "%s<data%d>" % (xml, i)
+        for key, value in item.iteritems():
+            xml = "%s<%s>%s</%s>" % (xml, str(key), str(value), str(key))
+        xml = "%s</data%d>" % (xml, i)
+    xml = "<%s>%s</%s>" % (root, xml, root)
+    return parseString(xml).toprettyxml()
