@@ -9,7 +9,12 @@
 '''
 import time
 import csv
-import cStringIO
+try:
+    #python 2
+    import cStringIO as StringIO
+except:
+    #python 3
+    import io as StringIO
 
 class cached_property(object):
     '''A decorator that converts a function into a lazy property. The
