@@ -8,16 +8,49 @@
 
 '''
 from __future__ import unicode_literals
+import sys
 import socket
 import time
 import serial
 
 from .logger import LOGGER
-from .utils import byte_to_string
+
 
 class Link(object):
     '''Abstract base class for all links.'''
     MAX_STRING_SIZE = 4048
+
+    def open(self):
+        '''Open the link.'''
+        pass
+
+    def close(self):
+        '''Close the link.'''
+        pass
+
+    def byte_to_string(self, byte):
+        '''Convert a byte string to it's hex string representation.'''
+        return ''.join( [ "%02X " % ord( x ) for x in byte ] ).strip()
+
+    def log(self, message, data, is_byte):
+        if is_byte:
+            LOGGER.info("%s : <%s>" % (message, self.byte_to_string(data)))
+        else:
+            LOGGER.info("%s : <%s>" % (message,repr(data)))
+
+    def __del__(self):
+        '''Close link when object is deleted.'''
+        self.close()
+
+    def __unicode__(self):
+        name = self.__class__.__name__
+        return "<%s %s>" % (name, self.url)
+
+    def __str__(self):
+        return str(self.__unicode__())
+
+    def __repr__(self):
+        return str(self.__unicode__())
 
 
 class TCPLink(Link):
@@ -32,7 +65,7 @@ class TCPLink(Link):
     @property
     def url(self):
         '''Make a connection url from `host` and `port`.'''
-        return 'socket://%s:%d' % (self.host, self.port)
+        return 'tcp:%s:%d' % (self.host, self.port)
 
     def open(self):
         '''Open the socket.'''
@@ -55,20 +88,26 @@ class TCPLink(Link):
         self.open()
         return self._socket
 
-    def write(self, data, byte=False):
+    def write(self, data, is_byte=False):
         '''Write all `data` to socket.'''
-        try:
-            #python 3
+        if sys.version_info[0] >= 3:
+            # Python 3
             self.socket.sendall(bytes(data, encoding='utf8'))
-        except:
-            #python 2
-            self.socket.sendall(data)
-        if byte:
-            LOGGER.info("Write : <%s>" % byte_to_string(data))
         else:
-            LOGGER.info("Write : <%s>" % repr(data))
+            # Python 2
+            self.socket.sendall(data)
+        self.log("Write", data, is_byte)
 
-    def recv_timeout(self, size, byte=False):
+    def read(self, size=None, is_byte=False):
+        '''Read data from socket. The maximum amount of data to be received at
+        once is specified by `size`. If `is_byte` is True, the data will be
+        convert to hexadecimal array.'''
+        size = size or self.MAX_STRING_SIZE
+        data = self.recv_timeout(size, is_byte)
+        self.log("Write", data, is_byte)
+        return data
+
+    def recv_timeout(self, size, is_byte=False):
         '''Uses a non-blocking sockets in order to continue trying to get data
         as long as the client manages to even send a single byte.
         This is useful for moving data which you know very little about
@@ -82,7 +121,7 @@ class TCPLink(Link):
 
         while True:
             #if you got some data, then break after wait sec
-            if time.time()- begin>timeout:
+            if time.time()- begin > timeout:
                 break
             try:
                 data = self.socket.recv(size)
@@ -100,36 +139,10 @@ class TCPLink(Link):
                 time.sleep(0.1)
                 pass
         self.socket.settimeout(self.timeout)
-        if byte:
+        if is_byte:
             return b"".join(total_data)
         else:
             return b"".join(total_data).decode("utf-8")
-
-    def read(self, size=None, byte=False):
-        '''Read data from socket. The maximum amount of data to be received at
-        once is specified by `size`. If `byte` is True, the data will be
-        convert to hexadecimal array.'''
-        size = size or self.MAX_STRING_SIZE
-        data = self.recv_timeout(size, byte)
-        if byte:
-            LOGGER.info("Read : <%s>" % byte_to_string(data))
-        else:
-            LOGGER.info("Read : <%s>" % repr(data))
-        return data
-
-    def __del__(self):
-        '''Close link when object is deleted.'''
-        self.close()
-
-    def __unicode__(self):
-        name = self.__class__.__name__
-        return "%s %s" % (name, self.url)
-
-    def __str__(self):
-        return str(self.__unicode__())
-
-    def __repr__(self):
-        return "<%s>" % str(self.__unicode__())
 
 
 class SerialLink(Link):
@@ -151,7 +164,7 @@ class SerialLink(Link):
     @property
     def url(self):
         '''Make a connection url.'''
-        return 'serial://%s, %d, %d%s%d' % (self.port, self.baudrate,
+        return 'serial:%s:%d:%d%s%d' % (self.port, self.baudrate,
                                           self.bytesize, self.parity,
                                           self.stopbits)
 
@@ -178,41 +191,16 @@ class SerialLink(Link):
         self.open()
         return self._serial
 
-    def write(self, data, byte=False):
+    def write(self, data, is_byte=False):
         '''Write all `data` to the serial connection.'''
-        try:
-            #python 3
-            self.serial.write(bytes(data, encoding='utf8'))
-        except:
-            #python 2
-            self.serial.write(data)
-        if byte:
-            LOGGER.info("Write : <%s>" % byte_to_string(data))
-        else:
-            LOGGER.info("Write : <%s>" % repr(data))
+        self.serial.write(data)
+        self.log("Write", data, is_byte)
 
-    def read(self, size=None, byte=False):
+    def read(self, size=None, is_byte=False):
         '''Read data from the serial connection. The maximum amount of data
-        to be received at once is specified by `size`. If `byte` is True,
+        to be received at once is specified by `size`. If `is_byte` is True,
         the data will be convert to byte array.'''
         size = size or self.MAX_STRING_SIZE
         data = self.serial.read(size)
-        if byte:
-            LOGGER.info("Read : <%s>" % byte_to_string(data))
-        else:
-            LOGGER.info("Read : <%s>" % repr(data))
+        self.log("Read", data, is_byte)
         return data
-
-    def __del__(self):
-        '''Close link when object is deleted.'''
-        self.close()
-
-    def __unicode__(self):
-        name = self.__class__.__name__
-        return "%s %s" % (name, self.url)
-
-    def __str__(self):
-        return str(self.__unicode__())
-
-    def __repr__(self):
-        return "<%s>" % str(self.__unicode__())

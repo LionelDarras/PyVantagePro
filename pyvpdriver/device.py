@@ -3,7 +3,7 @@
     pyvpdriver.device
     ~~~~~~~~~~~~~~~~~
 
-     Allows data query of Davis Vantage Pro2 devices
+    Allows data query of Davis Vantage Pro2 devices
 
     This part of code is inspired by PyWeather projet
     by Patrick C. McGinty <pyweather@tuxcoder.com>
@@ -12,14 +12,19 @@
     :license: GNU GPL v3.
 
 '''
-from __future__ import unicode_literals
+from __future__ import division, unicode_literals
 from datetime import datetime, timedelta
 from array import array
 import time
 import struct
 
 from .logger import LOGGER
-from .utils import cached_property, retry, byte_to_int, byte_to_string
+from .utils import (cached_property, retry, byte_to_int, byte_to_string, 
+                    bin_to_integer, hex_to_binary_string, hex_to_byte)
+
+def get_test_loop_packet():
+    data = "06 4C 4F 4F EC 00 A1 08 97 7C B8 03 1A FF 7F FF FF FF 7F FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 7F 00 00 FF FF 00 00 00 00 3C 03 00 00 00 00 00 00 FF FF FF FF FF FF FF 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 8C 00 06 09 64 01 7D 07 0A 0D 7D 94"
+    return hex_to_byte(data)
 
 class NoDeviceException(Exception):
     '''Can not access weather station.'''
@@ -29,9 +34,91 @@ class BadAckException(Exception):
     '''The acknowledgement is not the one expected.'''
     value = __doc__
 
+class DataParser(struct.Struct):
+    ''' Implements a reusable class for working with a binary data structure.
+    It provides a named fields interface, similiar to C structures.'''
+    def __init__(self, format, order='='):
+        self.fields, format_t = zip(*format)
+        format_t = str("%s%s" % (order, ''.join(format_t)))
+        super(DataParser,self).__init__(format_t)
+        
+
+    def unpack(self, buf):
+        '''Unpacks data from 'buf' and returns a dication of named fields.'''
+        data = self.unpack_from( buf, 0)
+        item = dict(zip(self.fields,data))
+        return item
+
+
+class LoopDataParser(DataParser):
+    # Loop data format (RevB)
+    LOOP_FORMAT = (
+        ('LOO',         '3s'), ('BarTrend',    'B'),  ('PacketType',  'B'),
+        ('NextRec',      'H'), ('Pressure',    'H'),  ('TempIn',      'H'),
+        ('HumIn',        'B'), ('TempOut',     'H'),  ('WindSpeed',   'B'),
+        ('WindSpeed10Min','B'),('WindDir',     'H'),  ('ExtraTemps',  '7s'),
+        ('SoilTemps',   '4s'), ('LeafTemps',  '4s'),  ('HumOut',      'B'),
+        ('HumExtra',    '7s'), ('RainRate',    'H'),  ('UV',          'B'),
+        ('SolarRad',     'H'), ('RainStorm',   'H'),  ('StormStartDate','H'),
+        ('RainDay',      'H'), ('RainMonth',   'H'),  ('RainYear',    'H'),
+        ('ETDay',        'H'), ('ETMonth',     'H'),  ('ETYear',      'H'),
+        ('SoilMoist',   '4s'), ('LeafWetness','4s'),  ('AlarmIn',     'B'),
+        ('AlarmRain',    'B'), ('AlarmOut' ,  '2s'),  ('AlarmExTempHum','8s'),
+        ('AlarmSoilLeaf','4s'),('BatteryStatus','B'), ('BatteryVolts','H'),
+        ('ForecastIcon','B'),  ('ForecastRuleNo','B'),('SunRise',     'H'),
+        ('SunSet',      'H'),  ('EOL',         '2s'), ('CRC',         'H'),
+    )
+    
+    def __init__(self, data):
+        super(LoopDataParser,self).__init__(self.LOOP_FORMAT)
+        self.data = data
+
+    def unpack(self):
+        item = {}
+        item['BarTrend'] = struct.unpack_from(b'B', self.data, 3)[0]
+        item['Pressure'] = struct.unpack_from(b'H', self.data, 7)[0] / 1000
+        item['TempIn'] = struct.unpack_from(b'H', self.data, 9)[0] / 10
+#        item['TempOut']        = item['TempOut']    /   10
+#        item['RainRate']       = item['RainRate']   /  100.0
+#        item['RainStorm']      = item['RainStorm']  /  100.0
+#        item['StormStartDate'] = self.unpack_storm_date(
+#                                        item['StormStartDate'])
+#        # rain totals
+#        item['RainDay']        = item['RainDay']   /  100.0
+#        item['RainMonth']      = item['RainMonth'] /  100.0
+#        item['RainYear']       = item['RainYear']  /  100.0
+#        # evapotranspiration totals
+#        item['ETDay']          = item['ETDay']     / 1000.0
+#        item['ETMonth']        = item['ETMonth']   /  100.0
+#        item['ETYear']         = item['ETYear']    /  100.0
+#        # soil moisture + leaf wetness
+#        item['SoilMoist']      = struct.unpack(str('4B'),item['SoilMoist'])
+#        item['LeafWetness']    = struct.unpack(str('4B'),item['LeafWetness'])
+#        # battery statistics
+#        item['BatteryVolts']   = item['BatteryVolts'] * 300 / 512.0 / 100.0
+#        # sunrise / sunset
+#        item['SunRise']        = self.unpack_time( item['SunRise'] )
+#        item['SunSet']         = self.unpack_time( item['SunSet'] )
+        import pprint
+        
+        pprint.pprint(item)
+        return item
+    
+    def unpack_storm_date(self, date):
+        '''Given a packed storm date field, unpack and return date.'''
+        year  = (date & 0x7f) + 2000        # 7 bits
+        day   = (date >> 7) & 0x01f         # 5 bits
+        month = (date >> 12) & 0x0f         # 4 bits
+        return "%s-%s-%s" % (year, month, day)
+
+    def unpack_time(self, time):
+        '''Given a packed time field, unpack and return "HH:MM" string.'''
+        # format: HHMM, and space padded on the left.ex: "601" is 6:01 AM
+        return "%02d:%02d" % divmod(time,100)  # covert to "06:01"
+
 class VantagePro2(object):
-    '''A class capable of reading raw (binary) weather data from a vantage pro
-    console.'''
+    '''A class capable of reading raw (binary) weather data from a 
+    Vantage Pro 2 console.'''
     # device reply commands
     WAKE_TIME = 2*60
     WAKE_STR = '\n'
@@ -106,15 +193,15 @@ class VantagePro2(object):
         raise NoDeviceException()
 
     @retry(tries=3, delay=1)
-    def run_cmd(self, cmd, wait_ack=None, byte=False):
+    def run_cmd(self, cmd, wait_ack=None, is_byte=False):
         '''Write a single command. If `wait_ack` is not None, the function must
         check that acknowledgement is the one expected.'''
         if (self.last_wake_up is None or
                 self.last_wake_up + self.WAKE_TIME < time.time()):
             self.wake_up()
-        if byte:
+        if is_byte:
             LOGGER.info("try send : %s" % byte_to_string(cmd))
-            self.link.write(cmd, byte)
+            self.link.write(cmd, is_byte)
         else:
             LOGGER.info("try send : %s" % cmd)
             self.link.write("%s\n" % cmd)
@@ -139,7 +226,7 @@ class VantagePro2(object):
     def firmware_date(self):
         '''Return the firmware date code'''
         self.run_cmd("VER", self.OK)
-        data = self.link.read()
+        data = self.link.read(13)
         return datetime.strptime(data.strip('\n\r'), '%b %d %Y').date()
 
     @cached_property(ttl=3600)
@@ -152,7 +239,7 @@ class VantagePro2(object):
     def get_time(self):
         '''Return the current date on the console.'''
         self.run_cmd("GETTIME", self.ACK)
-        bytes = self.link.read(8, byte=True)
+        bytes = self.link.read(8, is_byte=True)
         second = byte_to_int(bytes[0])
         minute = byte_to_int(bytes[1])
         hour = byte_to_int(bytes[2])
@@ -170,7 +257,7 @@ class VantagePro2(object):
         # crc in big-endian format
         checksum = struct.pack(str('>H'),self.get_checksum(date))
         self.run_cmd("SETTIME", self.ACK)
-        self.run_cmd(b"".join([date, checksum]), self.ACK, byte=True)
+        self.run_cmd(b"".join([date, checksum]), self.ACK, is_byte=True)
 
     time = property(get_time, set_time, "VantagePro2 date on the console")
 
@@ -192,11 +279,12 @@ class VantagePro2(object):
                     crc_errors = data[4])
 
     def get_current_data(self):
-        '''Get data.'''
-        # test
-        items = [{"name":"salem", "age":23}, {"name":"melinda", "age":21}]
-        return items
-        pass
+        '''Get real-time data.'''
+        self.run_cmd("LOOP 1")
+        data = self.link.read(100, is_byte=True)
+        # tested data
+        item = LoopDataParser(get_test_loop_packet()).unpack()
+        return [item]
 
     def get_data(self, start_date=None, stop_date=None):
         '''Get archive records until `start_date` and `stop_date`.'''

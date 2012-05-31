@@ -75,7 +75,7 @@ def extract(argv=None, stdout=sys.stdout, stdin=sys.stdin):
                 LOGGER.error("%s" % e)
                 link_parse_error()
             link = TCPLink(host, port)
-        if mode == "serial":
+        elif mode == "serial":
             if len(link_args) == 2:
                 port = link_args[1]
                 link = SerialLink(port)
@@ -104,13 +104,14 @@ def extract(argv=None, stdout=sys.stdout, stdin=sys.stdin):
     else:
         parser.error('Either sepecify an url link sepecified')
     vp = VantagePro2(link)
+
     format_ = args.format.lower()
 
-    if format_ == "csv":
+    if format_ == "xml":
+        data = dict_to_xml(vp.get_current_data())
+    else:
         delimiter = args.delimiter.decode("string-escape")
         data = dict_to_csv(vp.get_current_data(), delimiter)
-    else:
-        data = dict_to_xml(vp.get_current_data())
 
     output = args.output
     if output == stdout:
@@ -119,7 +120,6 @@ def extract(argv=None, stdout=sys.stdout, stdin=sys.stdin):
         path = os.path.abspath(output.encode('utf8'))
         with open(path, "w") as fd:
             fd.write(data)
-    print vp.firmware_date
 
 
 

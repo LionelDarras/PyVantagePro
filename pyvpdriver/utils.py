@@ -20,7 +20,6 @@ else:
 
 from xml.dom.minidom import parseString
 
-
 class cached_property(object):
     '''A decorator that converts a function into a lazy property evaluated
     only once within TTL period. The function wrapped is called the first
@@ -74,7 +73,7 @@ class retry(object):
 
     def __call__(self, f):
         def wrapped_f(*args, **kwargs):
-            for i in xrange(self.tries):
+            for i in range(self.tries):
                 try:
                     ret = f(*args, **kwargs)
                     if ret == True:
@@ -97,6 +96,44 @@ def byte_to_int(s):
 def byte_to_string(byte):
     '''Convert a byte string to it's hex string representation.'''
     return ''.join( [ "%02X " % ord( x ) for x in byte ] ).strip()
+
+def hex_to_binary_string(buf, num_of_bits):
+    """Convert byte to binary string representation.
+    e.g.
+    >>> hex_to_binary_string("FF", 8)
+    '11111111'
+    >>> 
+    >>> hex_to_binary_string("4A", 16)
+    '0000000001001010'
+    """
+    scale = 16 ## equals to hexadecimal
+    return bin(int(buf, scale))[2:].zfill(num_of_bits)
+
+def bin_to_integer(buf, start=0, stop=None):
+    """Convert binary string representation to integer.
+    e.g.
+    >>> bin_to_integer('1111110')
+    126
+    >>> bin_to_integer('1111110', 0, 2)
+    2
+    >>> bin_to_integer('1111110', 0, 3)
+    6
+    >>> 
+    """
+    if stop is None:
+        stop = len(buf)
+    return int(buf[::-1][start:stop][::-1], 2)
+
+def hex_to_byte( hexstr ):
+    """Convert a string hex byte values into a byte string.
+    The Hex Byte values mayor may not be space separated."""
+    bytes = []
+    
+    hexstr = b''.join( hexstr.split(b" ") )
+    for i in range(0, len(hexstr), 2):
+        bytes.append( chr( int (hexstr[i:i+2], 16 ) ) )
+
+    return b''.join( bytes )
 
 def dict_to_csv(items, delimiter=',', quotechar='"'):
     '''Serialize list of dictionaries to csv'''
