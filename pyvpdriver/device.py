@@ -136,12 +136,18 @@ class VantagePro2(object):
             return False
 
     @cached_property(ttl=3600)
-    def version(self):
+    def firmware_date(self):
         '''Return the firmware date code'''
         self.run_cmd("VER", self.OK)
         data = self.link.read()
         return datetime.strptime(data.strip('\n\r'), '%b %d %Y').date()
 
+    @cached_property(ttl=3600)
+    def firmware_version(self):
+        '''Return the firmware version as string'''
+        self.run_cmd("NVER", self.OK)
+        data = self.link.read()
+        return data.strip('\n\r')
 
     def get_time(self):
         '''Return the current date on the console.'''
@@ -192,13 +198,16 @@ class VantagePro2(object):
         return items
         pass
 
-    def get_data(self, start_date=None, stop_date=None)
+    def get_data(self, start_date=None, stop_date=None):
         '''Get archive records until `start_date` and `stop_date`.'''
         if start_date is None:
+            pass
             # download all archive
         else:
+            pass
             # download partial archive
         if stop_date is not None:
+            pass
             # split archive
         return
 

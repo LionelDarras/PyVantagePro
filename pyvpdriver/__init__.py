@@ -33,45 +33,93 @@ def extract(argv=None, stdout=sys.stdout, stdin=sys.stdin):
     parser.add_argument('--version', action='version',
                         version='PyVPDriver version %s' % VERSION,
                         help='Print PyVPDriver’s version number and exit.')
-    parser.add_argument('-f', '--format', choices=format_values,
-                        help='Output format. Can be ommited if `output` '
-                             'ends with ' + extensions)
+    parser.add_argument('-f', '--format', choices=format_values, default="csv",
+                        help='Output data format.')
+    parser.add_argument('--delimiter', action="store", default=",",
+                        help='CSV delimiter')
     parser.add_argument('-o', '--output', action="store",
                         default=stdout,
                         help='Filename where output is written')
 
+    parser.add_argument('link', action="store",
+                    help='Specifiy URL for connection link ' +
+                         'E.g. tcp:localhost:1111 ' +
+                         'or serial:/dev/ttyUSB0:19200:8N1')
+    parser.add_argument('--timeout', default=1, type=float,
+                        help="Connection link timeout")
+    parser.add_argument('--debug', action="store_true", default=False,
+                        help='Display log')
     args = parser.parse_args(argv)
+
+    if not args.debug:
+        LOGGER.disabled = True
 
     def output_parse_error():
         parser.error('Either sepecify a format with -f or choose an '
                      'output filename that ends in ' + extensions)
 
-    if args.format is None:
-        if args.output == stdout:
-            output_parse_error()
-        output_lower = args.output.lower()
-        for file_format in format_values:
-            if output_lower.endswith('.' + file_format):
-                format_ = file_format
-                break
+    def link_parse_error():
+        parser.error('Bad url link sepecified')
+
+    timeout = args.timeout
+    if args.link:
+        link_args = args.link.split(':')
+        if len(link_args) <= 1:
+            link_parse_error()
+        mode = link_args[0].lower()
+        if mode == "tcp":
+            try:
+                host = link_args[1]
+                port = int(link_args[2])
+            except Exception as e:
+                LOGGER.error("%s" % e)
+                link_parse_error()
+            link = TCPLink(host, port)
+        if mode == "serial":
+            if len(link_args) == 2:
+                port = link_args[1]
+                link = SerialLink(port)
+            elif len(link_args) == 2:
+                try:
+                    port = link_args[1]
+                    baudrate = int(link_args[2])
+                    link = SerialLink(port, baudrate)
+                except Exception as e:
+                    LOGGER.error("%s" % e)
+                    link_parse_error()
+            elif len(link_args) == 2:
+                try:
+                    port = link_args[1]
+                    baudrate = int(link_args[2])
+                    bytesize=int(link_args[3][1])
+                    parity= link_args[3][2]
+                    stopbits= int(link_args[3][3])
+                    link = SerialLink(port, baudrate, bytesize, parity,
+                                            stopbits, timeout)
+                except Exception as e:
+                    LOGGER.error("%s" % e)
+                    link_parse_error()
         else:
-            output_parse_error()
+            link_parse_error()
     else:
-        format_ = args.format.lower()
+        parser.error('Either sepecify an url link sepecified')
+    vp = VantagePro2(link)
+    format_ = args.format.lower()
 
     if format_ == "csv":
-        data = dict_to_csv(VantagePro2(None).get_data())
+        delimiter = args.delimiter.decode("string-escape")
+        data = dict_to_csv(vp.get_current_data(), delimiter)
     else:
-        data = dict_to_xml(VantagePro2(None).get_data())
+        data = dict_to_xml(vp.get_current_data())
 
     output = args.output
     if output == stdout:
         output.write(data)
     else:
         path = os.path.abspath(output.encode('utf8'))
-        output = open(path, "w")
-        output.write(data)
-        output.close()
+        with open(path, "w") as fd:
+            fd.write(data)
+    print vp.firmware_date
 
 
 

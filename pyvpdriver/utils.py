@@ -98,11 +98,11 @@ def byte_to_string(byte):
     '''Convert a byte string to it's hex string representation.'''
     return ''.join( [ "%02X " % ord( x ) for x in byte ] ).strip()
 
-def dict_to_csv(items, delimiter=',', quotechar='|'):
+def dict_to_csv(items, delimiter=',', quotechar='"'):
     '''Serialize list of dictionaries to csv'''
     output = StringIO.StringIO()
     csvwriter = csv.DictWriter(output, fieldnames=items[0].keys(),
-                               delimiter=delimiter, quotechar=delimiter)
+                               delimiter=delimiter, quotechar=quotechar)
     csvwriter.writeheader()
     for item in items:
       csvwriter.writerow(item)
