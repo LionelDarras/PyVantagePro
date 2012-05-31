@@ -142,6 +142,7 @@ class VantagePro2(object):
         data = self.link.read()
         return datetime.strptime(data.strip('\n\r'), '%b %d %Y').date()
 
+
     def get_time(self):
         '''Return the current date on the console.'''
         self.run_cmd("GETTIME", self.ACK)
@@ -184,12 +185,22 @@ class VantagePro2(object):
                     resyn = data[2], max_received = data[3],
                     crc_errors = data[4])
 
-    def get_data(self):
+    def get_current_data(self):
         '''Get data.'''
         # test
         items = [{"name":"salem", "age":23}, {"name":"melinda", "age":21}]
         return items
         pass
+
+    def get_data(start_date=None, stop_date=None)
+        '''Return archive records until `start_date` and `stop_date`.'''
+        if start_date is None:
+            # download all archive
+        else:
+            # download partial archive
+        if stop_date is not None:
+            # split archive
+        return
 
     def __del__(self):
         '''Close link when object is deleted.'''
