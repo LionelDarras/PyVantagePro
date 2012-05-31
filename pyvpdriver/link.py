@@ -139,7 +139,7 @@ class SerialLink(Link):
       - Device name: depending on operating system.
           e.g. /dev/ttyUSB0 on GNU/Linux or COM3 on Windows.'''
     def __init__(self, port, baudrate=38400, bytesize=7, parity='N',
-                                            stopbits=1, timeout=5):
+                                            stopbits=1, timeout=1):
         self.port = port
         self.timeout = timeout
         self.baudrate = baudrate
