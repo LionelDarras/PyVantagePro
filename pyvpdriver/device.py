@@ -19,7 +19,7 @@ import time
 import struct
 
 from .logger import LOGGER
-from .utils import (cached_property, retry, byte_to_int, byte_to_string, 
+from .utils import (cached_property, retry, byte_to_int, byte_to_string,
                     bin_to_integer, hex_to_binary_string, hex_to_byte)
 
 def get_test_loop_packet():
@@ -41,7 +41,7 @@ class DataParser(struct.Struct):
         self.fields, format_t = zip(*format)
         format_t = str("%s%s" % (order, ''.join(format_t)))
         super(DataParser,self).__init__(format_t)
-        
+
 
     def unpack(self, buf):
         '''Unpacks data from 'buf' and returns a dication of named fields.'''
@@ -50,27 +50,9 @@ class DataParser(struct.Struct):
         return item
 
 
-class LoopDataParser(DataParser):
+class LoopDataParser():
     # Loop data format (RevB)
-    LOOP_FORMAT = (
-        ('LOO',         '3s'), ('BarTrend',    'B'),  ('PacketType',  'B'),
-        ('NextRec',      'H'), ('Pressure',    'H'),  ('TempIn',      'H'),
-        ('HumIn',        'B'), ('TempOut',     'H'),  ('WindSpeed',   'B'),
-        ('WindSpeed10Min','B'),('WindDir',     'H'),  ('ExtraTemps',  '7s'),
-        ('SoilTemps',   '4s'), ('LeafTemps',  '4s'),  ('HumOut',      'B'),
-        ('HumExtra',    '7s'), ('RainRate',    'H'),  ('UV',          'B'),
-        ('SolarRad',     'H'), ('RainStorm',   'H'),  ('StormStartDate','H'),
-        ('RainDay',      'H'), ('RainMonth',   'H'),  ('RainYear',    'H'),
-        ('ETDay',        'H'), ('ETMonth',     'H'),  ('ETYear',      'H'),
-        ('SoilMoist',   '4s'), ('LeafWetness','4s'),  ('AlarmIn',     'B'),
-        ('AlarmRain',    'B'), ('AlarmOut' ,  '2s'),  ('AlarmExTempHum','8s'),
-        ('AlarmSoilLeaf','4s'),('BatteryStatus','B'), ('BatteryVolts','H'),
-        ('ForecastIcon','B'),  ('ForecastRuleNo','B'),('SunRise',     'H'),
-        ('SunSet',      'H'),  ('EOL',         '2s'), ('CRC',         'H'),
-    )
-    
     def __init__(self, data):
-        super(LoopDataParser,self).__init__(self.LOOP_FORMAT)
         self.data = data
 
     def unpack(self):
@@ -78,32 +60,58 @@ class LoopDataParser(DataParser):
         item['BarTrend'] = struct.unpack_from(b'B', self.data, 3)[0]
         item['Pressure'] = struct.unpack_from(b'H', self.data, 7)[0] / 1000
         item['TempIn'] = struct.unpack_from(b'H', self.data, 9)[0] / 10
-#        item['TempOut']        = item['TempOut']    /   10
-#        item['RainRate']       = item['RainRate']   /  100.0
-#        item['RainStorm']      = item['RainStorm']  /  100.0
+        item['HumIn'] = struct.unpack_from(b'B', self.data, 11)[0]
+        item['TempOut'] = struct.unpack_from(b'H', self.data, 12)[0] / 10
+        item['WindSpeed'] = struct.unpack_from(b'B', self.data, 14)[0]
+        item['WindSpeed10Min'] = struct.unpack_from(b'B', self.data, 15)[0]
+        item['WindDir'] = struct.unpack_from(b'H', self.data, 16)
+        item['ExtraTemps'] = [byte_to_int(s) - 90 for s in struct.unpack_from(b'7s', self.data, 18)[0]]
+        item['SoilTemps'] = struct.unpack_from(b'4s', self.data, 25)[0]
+        item['SoilTemps']  = [t-90 for t in struct.unpack(b'4B', item['SoilTemps'])]
+        item['LeafTemps'] = struct.unpack_from(b'4s', self.data, 29)[0]
+        item['LeafTemps']  = [t-90 for t in struct.unpack(b'4B', item['LeafTemps'])]
+        item['HumOut'] = struct.unpack_from(b'B', self.data, 33)[0]
+        item['HumExtra'] = [byte_to_int(s) for s in struct.unpack_from(b'7s', self.data, 34)[0]]
+        item['RainRate'] = struct.unpack_from(b'H', self.data, 41)[0] /  100
+        item['UV'] = struct.unpack_from(b'B', self.data, 43)[0]
+        item['SolarRad'] = struct.unpack_from(b'H', self.data, 44)[0]
+        item['RainStorm'] = struct.unpack_from(b'H', self.data, 46)[0] /  100
+
+        item['StormStartDate'] = struct.unpack_from(b'H', self.data, 48)[0]
+
+        item['RainDay'] = struct.unpack_from(b'H', self.data, 50)[0] / 100
+        item['RainMonth'] = struct.unpack_from(b'H', self.data, 52)[0] / 100
+        item['RainYear'] = struct.unpack_from(b'H', self.data, 54)[0] / 100
+        item['ETDay'] =  struct.unpack_from(b'H', self.data, 56)[0] / 1000
+        item['ETMonth'] = struct.unpack_from(b'H', self.data, 58)[0] / 100
+        item['ETYear'] = struct.unpack_from(b'H', self.data, 60)[0] / 100
+        item['SoilMoist'] = struct.unpack_from(b'4s', self.data, 62)[0]
+        item['SoilMoist'] = struct.unpack(b'4B',item['SoilMoist'])
+
+        item['LeafWetness'] = struct.unpack_from(b'4s', self.data, 66)[0]
+        item['LeafWetness'] = struct.unpack(b'4B', item['LeafWetness'])
+        item['AlarmIn'] = struct.unpack_from(b'B', self.data, 70)[0]
+        item['AlarmRain'] = struct.unpack_from(b'B', self.data, 71)[0]
+        item['AlarmOut'] = struct.unpack_from(b'2s', self.data, 72)[0]
+
+
+        item['AlarmExTempHum'] = struct.unpack_from(b'8s', self.data, 74)[0]
+        item['AlarmSoilLeaf'] = struct.unpack_from(b'4s', self.data, 82)[0]
+        item['BatteryStatus'] = struct.unpack_from(b'B', self.data, 86)[0]
+        item['BatteryVolts'] = struct.unpack_from(b'H', self.data, 87)[0]
+        item['BatteryVolts']   = item['BatteryVolts'] * 300 / 512 / 100
+        item['ForecastIcon'] = struct.unpack_from(b'B', self.data, 89)[0]
+        item['ForecastRuleNo'] = struct.unpack_from(b'B', self.data, 90)[0]
+        item['SunRise'] = struct.unpack_from(b'H', self.data, 91)[0]
+        item['SunSet'] = struct.unpack_from(b'H', self.data, 93)[0]
 #        item['StormStartDate'] = self.unpack_storm_date(
 #                                        item['StormStartDate'])
-#        # rain totals
-#        item['RainDay']        = item['RainDay']   /  100.0
-#        item['RainMonth']      = item['RainMonth'] /  100.0
-#        item['RainYear']       = item['RainYear']  /  100.0
-#        # evapotranspiration totals
-#        item['ETDay']          = item['ETDay']     / 1000.0
-#        item['ETMonth']        = item['ETMonth']   /  100.0
-#        item['ETYear']         = item['ETYear']    /  100.0
-#        # soil moisture + leaf wetness
-#        item['SoilMoist']      = struct.unpack(str('4B'),item['SoilMoist'])
-#        item['LeafWetness']    = struct.unpack(str('4B'),item['LeafWetness'])
-#        # battery statistics
-#        item['BatteryVolts']   = item['BatteryVolts'] * 300 / 512.0 / 100.0
+
 #        # sunrise / sunset
 #        item['SunRise']        = self.unpack_time( item['SunRise'] )
 #        item['SunSet']         = self.unpack_time( item['SunSet'] )
-        import pprint
-        
-        pprint.pprint(item)
         return item
-    
+
     def unpack_storm_date(self, date):
         '''Given a packed storm date field, unpack and return date.'''
         year  = (date & 0x7f) + 2000        # 7 bits
@@ -117,7 +125,7 @@ class LoopDataParser(DataParser):
         return "%02d:%02d" % divmod(time,100)  # covert to "06:01"
 
 class VantagePro2(object):
-    '''A class capable of reading raw (binary) weather data from a 
+    '''A class capable of reading raw (binary) weather data from a
     Vantage Pro 2 console.'''
     # device reply commands
     WAKE_TIME = 2*60
@@ -280,8 +288,8 @@ class VantagePro2(object):
 
     def get_current_data(self):
         '''Get real-time data.'''
-        self.run_cmd("LOOP 1")
-        data = self.link.read(100, is_byte=True)
+#        self.run_cmd("LOOP 1")
+ #       data = self.link.read(100, is_byte=True)
         # tested data
         item = LoopDataParser(get_test_loop_packet()).unpack()
         return [item]
