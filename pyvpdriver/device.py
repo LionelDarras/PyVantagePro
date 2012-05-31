@@ -192,8 +192,8 @@ class VantagePro2(object):
         return items
         pass
 
-    def get_data(start_date=None, stop_date=None)
-        '''Return archive records until `start_date` and `stop_date`.'''
+    def get_data(self, start_date=None, stop_date=None)
+        '''Get archive records until `start_date` and `stop_date`.'''
         if start_date is None:
             # download all archive
         else:
