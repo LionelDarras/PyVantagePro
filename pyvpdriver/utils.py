@@ -7,16 +7,36 @@
     :license: GNU GPL v3.
 
 '''
+import sys
+import os
 import time
-import math
+import csv
+if sys.version_info[0] >= 3:
+    # Python 3
+    import io as StringIO
+else:
+    # Python 2
+    import cStringIO as StringIO
 
-import functools, inspect
+from xml.dom.minidom import parseString
+
 
 class cached_property(object):
-    '''A decorator that converts a function into a lazy property. The
-    function wrapped is called the first time to retrieve the result
-    and then that calculated result is used the next time you access
-    the value.'''
+    '''A decorator that converts a function into a lazy property evaluated
+    only once within TTL period. The function wrapped is called the first
+    time to retrieve the result and then that calculated result is used
+    the next time you access the value.
+
+    The default time-to-live (TTL) is 300 seconds (5 minutes). Set the TTL to
+    zero for the cached value to never expire.
+
+    To expire a cached property value manually just do::
+
+        del instance._cache[<property name>]
+
+    Stolen from:
+    http://wiki.python.org/moin/PythonDecoratorLibrary#Cached_Properties
+    '''
     def __init__(self, ttl=300):
         self.ttl = ttl
 
@@ -41,16 +61,6 @@ class cached_property(object):
                 cache = inst._cache = {}
             cache[self.__name__] = (value, now)
         return value
-
-
-def byte_to_int(s):
-    '''return the integer value of a hexadecimal byte s'''
-    return int("%02X " % ord( s ),  16)
-
-def byte_to_string(byte):
-    '''Convert a byte string to it's hex string representation.'''
-    return ''.join( [ "%02X " % ord( x ) for x in byte ] ).strip()
-
 
 class retry(object):
     '''Retries a function or method until it returns True.
@@ -79,3 +89,35 @@ class retry(object):
                     time.sleep(self.delay)
 
         return wrapped_f
+
+def byte_to_int(s):
+    '''return the integer value of a hexadecimal byte s'''
+    return int("%02X " % ord( s ),  16)
+
+def byte_to_string(byte):
+    '''Convert a byte string to it's hex string representation.'''
+    return ''.join( [ "%02X " % ord( x ) for x in byte ] ).strip()
+
+def dict_to_csv(items, delimiter=',', quotechar='|'):
+    '''Serialize list of dictionaries to csv'''
+    output = StringIO.StringIO()
+    csvwriter = csv.DictWriter(output, fieldnames=items[0].keys(),
+                               delimiter=delimiter, quotechar=delimiter)
+    csvwriter.writeheader()
+    for item in items:
+      csvwriter.writerow(item)
+
+    content = output.getvalue()
+    output.close()
+    return content
+
+def dict_to_xml(items, root="vantagepro2"):
+    '''Serialize a list of dictionaries to XML'''
+    xml = ''
+    for i, item in enumerate(items):
+        xml = "%s<data%d>" % (xml, i)
+        for key, value in item.iteritems():
+            xml = "%s<%s>%s</%s>" % (xml, str(key), str(value), str(key))
+        xml = "%s</data%d>" % (xml, i)
+    xml = "<%s>%s</%s>" % (root, xml, root)
+    return parseString(xml).toprettyxml()

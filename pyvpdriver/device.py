@@ -96,7 +96,6 @@ class VantagePro2(object):
             LOGGER.error("Check CRC : BAD")
             return False
 
-    @retry(tries=3, delay=1)
     def wake_up(self):
         '''Wakeup the console.'''
         LOGGER.info("try wake up console")
@@ -106,7 +105,7 @@ class VantagePro2(object):
             return True
         raise NoDeviceException()
 
-    @retry(tries=3, delay=0.5)
+    @retry(tries=3, delay=1)
     def run_cmd(self, cmd, wait_ack=None, byte=False):
         '''Write a single command. If `wait_ack` is not None, the function must
         check that acknowledgement is the one expected.'''
@@ -142,6 +141,7 @@ class VantagePro2(object):
         self.run_cmd("VER", self.OK)
         data = self.link.read()
         return datetime.strptime(data.strip('\n\r'), '%b %d %Y').date()
+
 
     def get_time(self):
         '''Return the current date on the console.'''
@@ -185,10 +185,26 @@ class VantagePro2(object):
                     resyn = data[2], max_received = data[3],
                     crc_errors = data[4])
 
-    def get_data(self):
+    def get_current_data(self):
         '''Get data.'''
+        # test
+        items = [{"name":"salem", "age":23}, {"name":"melinda", "age":21}]
+        return items
         pass
+
+    def get_data(self, start_date=None, stop_date=None)
+        '''Get archive records until `start_date` and `stop_date`.'''
+        if start_date is None:
+            # download all archive
+        else:
+            # download partial archive
+        if stop_date is not None:
+            # split archive
+        return
 
     def __del__(self):
         '''Close link when object is deleted.'''
-        self.link.close()
+        try:
+            self.link.close()
+        except:
+            pass
