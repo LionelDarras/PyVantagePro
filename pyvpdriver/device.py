@@ -23,7 +23,7 @@ from .utils import (cached_property, retry, byte_to_int, byte_to_string,
                     bin_to_integer, hex_to_binary_string, hex_to_byte)
 
 def get_test_loop_packet():
-    data = "06 4C 4F 4F EC 00 A1 08 97 7C B8 03 1A FF 7F FF FF FF 7F FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 7F 00 00 FF FF 00 00 00 00 3C 03 00 00 00 00 00 00 FF FF FF FF FF FF FF 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 8C 00 06 09 64 01 7D 07 0A 0D 7D 94"
+    data = "4C 4F 4F EC 00 A1 08 97 7C B8 03 1A FF 7F FF FF FF 7F FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 7F 00 00 FF FF 00 00 00 00 3C 03 00 00 00 00 00 00 FF FF FF FF FF FF FF 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 8C 00 06 09 64 01 7D 07 0A 0D 7D 94"
     return hex_to_byte(data)
 
 class NoDeviceException(Exception):
