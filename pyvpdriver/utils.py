@@ -50,8 +50,9 @@ class cached_property(object):
         now = time.time()
         try:
             value, last_update = inst._cache[self.__name__]
-            if self.ttl > 0 and now - last_update > self.ttl:
-                raise AttributeError
+            if self.ttl is not None:
+                if self.ttl > 0 and now - last_update > self.ttl:
+                    raise AttributeError
         except (KeyError, AttributeError):
             value = self.fget(inst)
             try:
@@ -158,3 +159,7 @@ def dict_to_xml(items, root="vantagepro2"):
         xml = "%s</data%d>" % (xml, i)
     xml = "<%s>%s</%s>" % (root, xml, root)
     return parseString(xml).toprettyxml()
+
+def fahrenheit_to_celsius(f):
+    'Degrees Fahrenheit (F) to degrees Celsius (C)'
+    return (f - 32.0) * 0.555556

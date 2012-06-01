@@ -112,6 +112,8 @@ def extract(argv=None, stdout=sys.stdout, stdin=sys.stdin):
     else:
         delimiter = args.delimiter.decode("string-escape")
         data = dict_to_csv(vp.get_current_data(), delimiter)
+        import pprint
+        pprint.pprint(vp.get_current_data())
 
     output = args.output
     if output == stdout:
