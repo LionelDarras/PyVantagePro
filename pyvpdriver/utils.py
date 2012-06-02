@@ -7,6 +7,7 @@
     :license: GNU GPL v3.
 
 '''
+from __future__ import division, unicode_literals
 import sys
 import os
 import time
@@ -130,11 +131,10 @@ def hex_to_byte( hexstr ):
     The Hex Byte values mayor may not be space separated."""
     bytes = []
     
-    hexstr = b''.join( hexstr.split(b" ") )
+    hexstr = hexstr.replace(' ', '')
     for i in range(0, len(hexstr), 2):
         bytes.append( chr( int (hexstr[i:i+2], 16 ) ) )
-
-    return b''.join( bytes )
+    return b''.join(bytes)
 
 def dict_to_csv(items, delimiter=',', quotechar='"'):
     '''Serialize list of dictionaries to csv'''

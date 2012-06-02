@@ -22,13 +22,6 @@ from .logger import LOGGER
 from .utils import (cached_property, retry, byte_to_int, byte_to_string,
                     bin_to_integer, hex_to_binary_string, hex_to_byte)
 
-def get_test_loop_packet():
-    data = "4c4f4f14003e032175da0239d10204056301ffffffffffffffffffff" \
-    "ffffffffff4effffffffffffff0000ffff7f0000ffff000000000000000000000000ffff" \
-    "ffffffffff0000000000000000000000000000000000002703064b26023e070a0d1163"
-
-    return data.decode('hex')
-
 class NoDeviceException(Exception):
     '''Can not access weather station.'''
     value = __doc__
