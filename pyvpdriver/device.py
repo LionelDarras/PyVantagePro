@@ -70,6 +70,7 @@ class LoopDataParser(DataParser):
         ('ForecastIcon','B'),  ('ForecastRuleNo','B'),('SunRise',     'H'),
         ('SunSet',      'H'),  ('EOL',         '2s'), ('CRC',         'H'),
     )
+
     def __init__(self, data):
         super(LoopDataParser,self).__init__(self.LOOP_FORMAT)
         self.data = data
@@ -108,7 +109,6 @@ class LoopDataParser(DataParser):
         # sunrise / sunset
         item['SunRise'] = self.unpack_time( item['SunRise'] )
         item['SunSet']  = self.unpack_time( item['SunSet'] )
-#        item['WindDir'] = struct.unpack_from(b'H', self.data, 16)[0]
         del item['LOO']
         del item['NextRec']
         del item['PacketType']
