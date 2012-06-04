@@ -12,7 +12,7 @@
 import sys, os
 import argparse
 # Make sure the logger is configured early:
-from .logger import LOGGER
+from .logger import LOGGER, active_logger
 
 from .device import VantagePro2
 from pylink import link_from_url
@@ -52,7 +52,7 @@ def extract(argv=None, stdout=sys.stdout, stdin=sys.stdin):
     args = parser.parse_args(argv)
 
     if not args.debug:
-        LOGGER.disabled = True
+        LOGGER = active_logger()
 
     def output_parse_error():
         parser.error('Either sepecify a format with -f')
@@ -77,7 +77,7 @@ def extract(argv=None, stdout=sys.stdout, stdin=sys.stdin):
         data = dict_to_csv(vp.get_current_data(), delimiter)
     else:
         parser.error('Either sepecify a format with -f in ' + extensions)
-        
+
     output = args.output
     if output == stdout:
         output.write(data)

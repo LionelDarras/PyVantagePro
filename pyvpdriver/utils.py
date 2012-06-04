@@ -12,6 +12,7 @@ import sys
 import os
 import time
 import csv
+import binascii
 if sys.version_info[0] >= 3:
     # Python 3
     import io as StringIO
@@ -129,18 +130,14 @@ def bin_to_integer(buf, start=0, stop=None):
 def hex_to_byte( hexstr ):
     """Convert a string hex byte values into a byte string.
     The Hex Byte values mayor may not be space separated."""
-    bytes = []
-    
     hexstr = hexstr.replace(' ', '')
-    for i in range(0, len(hexstr), 2):
-        bytes.append( chr( int (hexstr[i:i+2], 16 ) ) )
-    return b''.join(bytes)
+    return binascii.unhexlify(hexstr.encode('utf-8'))
 
-def dict_to_csv(items, delimiter=',', quotechar='"'):
+def dict_to_csv(items, delimiter=','):
     '''Serialize list of dictionaries to csv'''
     output = StringIO.StringIO()
     csvwriter = csv.DictWriter(output, fieldnames=items[0].keys(),
-                               delimiter=delimiter, quotechar=quotechar)
+                               delimiter=delimiter)
     csvwriter.writeheader()
     for item in items:
       csvwriter.writerow(item)

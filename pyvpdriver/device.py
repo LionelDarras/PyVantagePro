@@ -13,14 +13,13 @@
 
 '''
 from __future__ import division, unicode_literals
-from datetime import datetime, timedelta
-from array import array
 import time
 import struct
+from datetime import datetime
+from array import array
 
 from .logger import LOGGER
-from .utils import (cached_property, retry, byte_to_int, byte_to_string,
-                    bin_to_integer, hex_to_binary_string, hex_to_byte)
+from .utils import cached_property, retry, hex_to_byte
 
 class NoDeviceException(Exception):
     '''Can not access weather station.'''
@@ -69,14 +68,13 @@ class LoopDataParser(DataParser):
         self.data = data
 
     def values(self):
-        from .utils import fahrenheit_to_celsius 
         item = self.unpack(self.data)
-        
+
         item['Pressure'] = item['Pressure'] / 1000
-        item['TempIn'] = fahrenheit_to_celsius(item['TempIn'] / 10)
+        item['TempIn'] = item['TempIn'] / 10
         item['TempOut'] = item['TempOut'] / 10
-        
-        item['RainRate']       = item['RainRate']   /  100.0
+
+        item['RainRate'] = item['RainRate']   /  100.0
         item['RainStorm']      = item['RainStorm']  /  100.0
         item['StormStartDate'] = self.unpack_storm_date(item['StormStartDate'])
         # rain totals
@@ -281,6 +279,11 @@ class VantagePro2(object):
 
     def get_current_data(self):
         '''Get real-time data.'''
+#        data = str("4c4f4f14003e032175da0239d10204056301ffffffffffffffffffff" \
+#                "ffffffffff4effffffffffffff0000ffff7f0000ffff000000000000" \
+#                "000000000000ffffffffffffff000000000000000000000000000000" \
+#                "0000002703064b26023e070a0d1163")
+#        data = hex_to_byte(data)
         self.run_cmd("LOOP 1", self.ACK)
         data = self.link.read(99, is_byte=True)
         self.verify_checksum(data)

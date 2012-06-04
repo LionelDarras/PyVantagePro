@@ -26,4 +26,4 @@ class TestLoopParser:
     def test_unpack(self):
         """Test echo."""
         values = LoopDataParser(self.data).values()
-        assert values["TempIn"] == 22.777796000000002
+        assert values["TempIn"] == 73.0
