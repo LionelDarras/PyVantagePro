@@ -51,7 +51,7 @@ def extract(argv=None, stdout=sys.stdout, stdin=sys.stdin):
                         help='Display log')
     args = parser.parse_args(argv)
 
-    if not args.debug:
+    if args.debug:
         LOGGER = active_logger()
 
     def output_parse_error():
@@ -85,8 +85,6 @@ def extract(argv=None, stdout=sys.stdout, stdin=sys.stdin):
         path = os.path.abspath(output.encode('utf8'))
         with open(path, "w") as fd:
             fd.write(data)
-
-
 
 
 def config(argv=None, stdout=sys.stdout, stdin=sys.stdin):
