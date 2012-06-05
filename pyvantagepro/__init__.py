@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
-    pyvpdriver
-    ~~~~~~~~~~
+    pyvantagepro
+    ------------
 
     The public API and command-line interface to PyVPDriver.
 

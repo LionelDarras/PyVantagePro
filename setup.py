@@ -1,7 +1,7 @@
 # coding: utf8
 """
-    PyVPDriver
-    ~~~~~~~~~~
+    PyVantagePro
+    ------------
 
     Communication driver for VantagePro 2 station
 
@@ -25,7 +25,7 @@ except:
     pass
 
 REQUIREMENTS = [
-    'pyserial',
+    'pylink',
 ]
 
 if sys.version_info < (2, 7) or (3,) <= sys.version_info < (3, 2):
@@ -33,9 +33,9 @@ if sys.version_info < (2, 7) or (3,) <= sys.version_info < (3, 2):
     REQUIREMENTS.append('argparse')
 
 setup(
-    name='PyVPDriver',
+    name='PyVantagePro',
     version='0.1',
-    url='https://github.com/SalemHarrache/PyVPDriver',
+    url='https://github.com/SalemHarrache/PyVantagePro',
     license='GNU GPL v3',
     description='Communication driver for VantagePro 2 station',
     long_description=README + '\n\n' + CHANGES,
@@ -53,11 +53,11 @@ setup(
     packages=find_packages(),
     zip_safe=False,
     install_requires=REQUIREMENTS,
-    test_suite='pyvpdriver.tests',
+    test_suite='pyvantagepro.tests',
     entry_points={
         'console_scripts': [
-            'pyvpextract = pyvpdriver.__init__:extract',
-            'pyvpconfig = pyvpdriver.__init__:config'
+            'vpextract = pyvantagepro.__init__:extract',
+            'vpconfig = pyvantagepro.__init__:config'
         ],
     },
 )

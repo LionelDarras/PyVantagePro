@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
-    pyvpdriver.device
-    ~~~~~~~~~~~~~~~~~
+    pyvantagepro.device
+    -------------------
 
     Allows data query of Davis Vantage Pro2 devices
 
@@ -21,13 +21,16 @@ from array import array
 from .logger import LOGGER
 from .utils import cached_property, retry, hex_to_byte
 
+
 class NoDeviceException(Exception):
     '''Can not access weather station.'''
     value = __doc__
 
+
 class BadAckException(Exception):
     '''The acknowledgement is not the one expected.'''
     value = __doc__
+
 
 class DataParser(struct.Struct):
     ''' Implements a reusable class for working with a binary data structure.
@@ -37,12 +40,12 @@ class DataParser(struct.Struct):
         format_t = str("%s%s" % (order, ''.join(format_t)))
         super(DataParser,self).__init__(format_t)
 
-
     def unpack(self, buf):
         '''Unpacks data from 'buf' and returns a dication of named fields.'''
         data = self.unpack_from( buf, 0)
         item = dict(zip(self.fields,data))
         return item
+
 
 class LoopDataParser(DataParser):
     # Loop data format (RevB)

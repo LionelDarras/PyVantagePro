@@ -1,7 +1,7 @@
 # coding: utf8
 """
-    pyvpdriver.logger
-    -----------------
+    pyvantagepro.logger
+    -------------------
 
     Logging setup.
 

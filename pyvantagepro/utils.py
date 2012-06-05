@@ -1,7 +1,7 @@
 # coding: utf8
 '''
-    pyvpdriver.utils
-    ~~~~~~~~~~~~~~~~
+    pyvantagepro.utils
+    ------------------
 
     :copyright: Copyright 2012 Salem Harrache and contributors, see AUTHORS.
     :license: GNU GPL v3.
@@ -21,6 +21,7 @@ else:
     import cStringIO as StringIO
 
 from xml.dom.minidom import parseString
+
 
 class cached_property(object):
     '''A decorator that converts a function into a lazy property evaluated
@@ -64,6 +65,7 @@ class cached_property(object):
             cache[self.__name__] = (value, now)
         return value
 
+
 class retry(object):
     '''Retries a function or method until it returns True.
     delay sets the initial delay in seconds, and backoff sets the factor by
@@ -92,49 +94,44 @@ class retry(object):
 
         return wrapped_f
 
-def byte_to_int(s):
-    '''return the integer value of a hexadecimal byte s'''
-    return int("%02X " % ord( s ),  16)
 
 def byte_to_string(byte):
     '''Convert a byte string to it's hex string representation.'''
     return ''.join( [ "%02X " % ord( x ) for x in byte ] ).strip()
 
+
 def hex_to_binary_string(buf, num_of_bits):
-    """Convert byte to binary string representation.
-    e.g.
+    '''Convert byte to binary string representation.
+    E.g.
     >>> hex_to_binary_string("FF", 8)
     '11111111'
-    >>> 
+    >>>
     >>> hex_to_binary_string("4A", 16)
     '0000000001001010'
-    """
-    scale = 16 ## equals to hexadecimal
-    return bin(int(buf, scale))[2:].zfill(num_of_bits)
+    '''
+    return bin(int(buf, 16))[2:].zfill(num_of_bits)
+
 
 def bin_to_integer(buf, start=0, stop=None):
-    """Convert binary string representation to integer.
-    e.g.
+    '''Convert binary string representation to integer.
+    E.g.
     >>> bin_to_integer('1111110')
     126
     >>> bin_to_integer('1111110', 0, 2)
     2
     >>> bin_to_integer('1111110', 0, 3)
     6
-    >>> 
-    """
-    if stop is None:
-        stop = len(buf)
-    return int(buf[::-1][start:stop][::-1], 2)
+    '''
+    return int(buf[::-1][start:(stop or len(buf))][::-1], 2)
+
 
 def hex_to_byte( hexstr ):
-    """Convert a string hex byte values into a byte string.
-    The Hex Byte values mayor may not be space separated."""
-    hexstr = hexstr.replace(' ', '')
-    return binascii.unhexlify(hexstr.encode('utf-8'))
+    '''Convert a string hex byte values into a byte string.'''
+    return binascii.unhexlify(hexstr.replace(' ', '').encode('utf-8'))
+
 
 def dict_to_csv(items, delimiter=','):
-    '''Serialize list of dictionaries to csv'''
+    '''Serialize list of dictionaries to csv.'''
     output = StringIO.StringIO()
     csvwriter = csv.DictWriter(output, fieldnames=items[0].keys(),
                                delimiter=delimiter)
@@ -146,8 +143,9 @@ def dict_to_csv(items, delimiter=','):
     output.close()
     return content
 
+
 def dict_to_xml(items, root="vantagepro2"):
-    '''Serialize a list of dictionaries to XML'''
+    '''Serialize a list of dictionaries to XML.'''
     xml = ''
     for i, item in enumerate(items):
         xml = "%s<data%d>" % (xml, i)
@@ -156,7 +154,3 @@ def dict_to_xml(items, root="vantagepro2"):
         xml = "%s</data%d>" % (xml, i)
     xml = "<%s>%s</%s>" % (root, xml, root)
     return parseString(xml).toprettyxml()
-
-def fahrenheit_to_celsius(f):
-    'Degrees Fahrenheit (F) to degrees Celsius (C)'
-    return (f - 32.0) * 0.555556
