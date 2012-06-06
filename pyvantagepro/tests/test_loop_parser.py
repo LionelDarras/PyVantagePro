@@ -12,7 +12,8 @@
 
 from __future__ import division, unicode_literals
 
-from ..device import LoopDataParser
+from . import LOGGER
+from ..device import LoopDataParserRevB
 from ..utils import hex_to_byte
 
 class TestLoopParser:
@@ -27,5 +28,5 @@ class TestLoopParser:
 
     def test_unpack(self):
         '''Test unpack loop packet.'''
-        values = LoopDataParser(self.data).values()
-        assert values["TempIn"] == 73.0
+        item = LoopDataParserRevB(self.data)
+        assert item["TempIn"] == 73.0

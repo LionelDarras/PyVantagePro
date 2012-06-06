@@ -11,11 +11,11 @@
 '''
 import sys, os
 import argparse
+from pylink import link_from_url
+
 # Make sure the logger is configured early:
 from .logger import LOGGER, active_logger
-
 from .device import VantagePro2
-from pylink import link_from_url
 from .utils import dict_to_csv, dict_to_xml
 
 VERSION = '0.1dev'

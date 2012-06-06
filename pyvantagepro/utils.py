@@ -13,6 +13,7 @@ import os
 import time
 import csv
 import binascii
+import struct
 if sys.version_info[0] >= 3:
     # Python 3
     import io as StringIO
@@ -20,6 +21,7 @@ else:
     # Python 2
     import cStringIO as StringIO
 
+from blist import sorteddict
 from xml.dom.minidom import parseString
 
 
@@ -97,20 +99,58 @@ class retry(object):
 
 def byte_to_string(byte):
     '''Convert a byte string to it's hex string representation.'''
-    return ''.join( [ "%02X " % ord( x ) for x in byte ] ).strip()
+    hexstr = str(binascii.hexlify(byte))
+    data = []
+    for i in range(0, len(hexstr), 2):
+        data.append("%s" % hexstr[i:i + 2].upper())
+    return ' '.join(data)
+    return hexstr
 
 
-def hex_to_binary_string(buf, num_of_bits):
+def byte_to_binary(byte, num_of_bits=8):
     '''Convert byte to binary string representation.
     E.g.
-    >>> hex_to_binary_string("FF", 8)
+    >>> hex_to_binary_string("\xFF", 8)
     '11111111'
     >>>
-    >>> hex_to_binary_string("4A", 16)
+    >>> hex_to_binary_string("\x4A", 16)
     '0000000001001010'
     '''
+    buf = byte_to_string(byte).replace(' ', '')
     return bin(int(buf, 16))[2:].zfill(num_of_bits)
 
+
+def byte_to_binary(byte):
+    '''Convert byte to binary string representation.
+    E.g.
+    >>> hex_to_binary_string("\x4A")
+    '0000000001001010'
+    '''
+    return ''.join(str((byte & (1 << i)) and 1) for i in reversed(range(8)))
+
+def bytes_to_binary(list_bytes):
+    '''Convert bytes to binary string representation.
+    E.g.
+    >>> hex_to_binary_string("\x4A\xFF")
+    '0100101011111111'
+    '''
+    if sys.version_info[0] >= 3:
+        # TODO: Python 3 convert \x00 to integer 0 ?
+        if list_bytes == 0:
+            data = '00000000'
+        else:
+            data = ''.join([byte_to_binary(b) for b in list_bytes])
+    else:
+        data = ''.join(byte_to_binary(ord(b)) for b in list_bytes)
+    return data
+
+def hex_to_binary(hexstr):
+    '''Convert hexadecimal string to binary string representation.
+    E.g.
+    >>> hex_to_binary_string("FF")
+    '11111111'
+    '''
+    return ''.join(byte_to_binary(ord(b)) for b in hex_to_byte(hexstr))
 
 def bin_to_integer(buf, start=0, stop=None):
     '''Convert binary string representation to integer.
@@ -125,17 +165,18 @@ def bin_to_integer(buf, start=0, stop=None):
     return int(buf[::-1][start:(stop or len(buf))][::-1], 2)
 
 
-def hex_to_byte( hexstr ):
+def hex_to_byte(hexstr):
     '''Convert a string hex byte values into a byte string.'''
     return binascii.unhexlify(hexstr.replace(' ', '').encode('utf-8'))
 
 
-def dict_to_csv(items, delimiter=','):
+def dict_to_csv(items, delimiter=b',', header=True):
     '''Serialize list of dictionaries to csv.'''
     output = StringIO.StringIO()
     csvwriter = csv.DictWriter(output, fieldnames=items[0].keys(),
                                delimiter=delimiter)
-    csvwriter.writeheader()
+    if header:
+        csvwriter.writeheader()
     for item in items:
       csvwriter.writerow(item)
 
@@ -154,3 +195,54 @@ def dict_to_xml(items, root="vantagepro2"):
         xml = "%s</data%d>" % (xml, i)
     xml = "<%s>%s</%s>" % (root, xml, root)
     return parseString(xml).toprettyxml()
+
+
+class DataDict(object):
+    '''Implements dict with somes additional methods.'''
+    def __init__(self, initial_dict = None):
+        self.store = sorteddict(initial_dict) or sorteddict()
+
+    def __getitem__(self, key):
+        return self.store[key]
+
+    def __setitem__(self, key, value):
+        self.store[key] = value
+
+    def __delitem__(self, key):
+        del self.store[key]
+
+    def copy(self):
+        return DataDict(self)
+
+    def __iter__(self):
+        return iter(self.store)
+
+    def __len__(self):
+        return len(self.store)
+
+    def filter(self, keys):
+        data = dict(self.store)
+        unused_keys = set(data.keys()) - set(keys)
+        for key in unused_keys:
+            del data[key]
+        return DataDict(data)
+
+    def to_xml(self, *args, **kwargs):
+        return dict_to_xml([self.store], *args, **kwargs)
+
+    def to_csv(self, *args, **kwargs):
+        return dict_to_csv([self.store], *args, **kwargs)
+
+    def __unicode__(self):
+        return self.store.__unicode__()
+
+    def __str__(self):
+        return self.store.__str__()
+
+    def __repr__(self):
+        return self.store.__repr__()
+
+    def sort(self):
+        '''Return sorted dict by key'''
+        keys = sorted(self.store.iterkeys())
+        return DataDict(dict((key, self[key]) for key in keys))
