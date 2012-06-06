@@ -7,7 +7,7 @@
     :license: GNU GPL v3.
 
 '''
-from __future__ import division, unicode_literals
+from __future__ import unicode_literals
 import sys
 import os
 import time
@@ -128,10 +128,11 @@ def byte_to_binary(byte):
     '''
     return ''.join(str((byte & (1 << i)) and 1) for i in reversed(range(8)))
 
+
 def bytes_to_binary(list_bytes):
     '''Convert bytes to binary string representation.
     E.g.
-    >>> hex_to_binary_string("\x4A\xFF")
+    >>> hex_to_binary_string(b"\x4A\xFF")
     '0100101011111111'
     '''
     if sys.version_info[0] >= 3:
@@ -143,6 +144,7 @@ def bytes_to_binary(list_bytes):
     else:
         data = ''.join(byte_to_binary(ord(b)) for b in list_bytes)
     return data
+
 
 def hex_to_binary(hexstr):
     '''Convert hexadecimal string to binary string representation.
@@ -170,13 +172,16 @@ def hex_to_byte(hexstr):
     return binascii.unhexlify(hexstr.replace(' ', '').encode('utf-8'))
 
 
-def dict_to_csv(items, delimiter=b',', header=True):
+def dict_to_csv(items, delimiter=',', header=True):
     '''Serialize list of dictionaries to csv.'''
+    delimiter = str(delimiter)
     output = StringIO.StringIO()
     csvwriter = csv.DictWriter(output, fieldnames=items[0].keys(),
                                delimiter=delimiter)
     if header:
-        csvwriter.writeheader()
+        csvwriter.writerow(dict((key,key) for key in items[0].keys()))
+        # writeheader is not supported in python2.6
+#        csvwriter.writeheader()
     for item in items:
       csvwriter.writerow(item)
 
@@ -190,7 +195,7 @@ def dict_to_xml(items, root="vantagepro2"):
     xml = ''
     for i, item in enumerate(items):
         xml = "%s<data%d>" % (xml, i)
-        for key, value in item.iteritems():
+        for key, value in item.items():
             xml = "%s<%s>%s</%s>" % (xml, str(key), str(value), str(key))
         xml = "%s</data%d>" % (xml, i)
     xml = "<%s>%s</%s>" % (root, xml, root)
@@ -200,7 +205,8 @@ def dict_to_xml(items, root="vantagepro2"):
 class DataDict(object):
     '''Implements dict with somes additional methods.'''
     def __init__(self, initial_dict = None):
-        self.store = sorteddict(initial_dict) or sorteddict()
+        initial_dict = initial_dict or {}
+        self.store = sorteddict(initial_dict)
 
     def __getitem__(self, key):
         return self.store[key]
@@ -221,28 +227,23 @@ class DataDict(object):
         return len(self.store)
 
     def filter(self, keys):
-        data = dict(self.store)
+        data = self.store.copy()
         unused_keys = set(data.keys()) - set(keys)
         for key in unused_keys:
             del data[key]
         return DataDict(data)
 
-    def to_xml(self, *args, **kwargs):
-        return dict_to_xml([self.store], *args, **kwargs)
+    def to_xml(self, root="vantagepro2"):
+        return dict_to_xml([self.store,], root)
 
-    def to_csv(self, *args, **kwargs):
-        return dict_to_csv([self.store], *args, **kwargs)
+    def to_csv(self, delimiter=',', header=True):
+        return dict_to_csv([self.store,], delimiter, header)
 
     def __unicode__(self):
-        return self.store.__unicode__()
+        return "%s" % self.store
 
     def __str__(self):
-        return self.store.__str__()
+        return "%s" % self.store.__str__()
 
     def __repr__(self):
         return self.store.__repr__()
-
-    def sort(self):
-        '''Return sorted dict by key'''
-        keys = sorted(self.store.iterkeys())
-        return DataDict(dict((key, self[key]) for key in keys))
