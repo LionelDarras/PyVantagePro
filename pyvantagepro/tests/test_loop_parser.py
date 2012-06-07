@@ -13,7 +13,7 @@
 from __future__ import division, unicode_literals
 
 from . import LOGGER
-from ..device import LoopDataParserRevB
+from ..parser import (LoopDataParserRevB, VantageProCRC)
 from ..utils import hex_to_byte
 
 class TestLoopParser:
@@ -25,6 +25,10 @@ class TestLoopParser:
                 "0000000000000000ffffffffffffff00000000000000000000000000" \
                 "00000000002703064b26023e070a0d1163")
         self.data = hex_to_byte(data)
+
+    def test_check_crc(self):
+        '''Test crc verification.'''
+        assert VantageProCRC(self.data).check()
 
     def test_unpack(self):
         '''Test unpack loop packet.'''

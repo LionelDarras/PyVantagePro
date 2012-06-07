@@ -71,10 +71,10 @@ def extract(argv=None, stdout=sys.stdout, stdin=sys.stdin):
     format_ = args.format.lower()
 
     if format_ == "xml":
-        data = dict_to_xml(vp.get_current_data())
+        data = vp.get_current_data().to_xml()
     elif format_ == "csv":
         delimiter = args.delimiter.decode("string-escape")
-        data = dict_to_csv(vp.get_current_data(), delimiter)
+        data = vp.get_current_data().to_csv(delimiter)
     else:
         parser.error('Either sepecify a format with -f in ' + extensions)
 

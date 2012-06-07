@@ -83,20 +83,20 @@ class VantageProCRC(object):
             return False
 
 
-class DataParser(struct.Struct, DataDict):
+class DataParser(DataDict):
     '''Implements a reusable class for working with a binary data structure.
     It provides a named fields interface, similiar to C structures.'''
 
     def __init__(self, data, data_format, order='='):
+        VantageProCRC(data).check()
         self.fields, format_t = zip(*data_format)
         format_t = str("%s%s" % (order, ''.join(format_t)))
-        super(DataParser, self).__init__(format = format_t)
-        VantageProCRC(data).check()
-        self.raw_bytes = data
-        # Unpacks data from 'buf' and returns a dication of named fields
-        data = self.unpack_from(self.raw_bytes, 0)
+        self.struct = struct.Struct(format = format_t)
 
-        self.store = dict(zip(self.fields, data))
+        self.raw_bytes = data
+        # Unpacks data from `raw_bytes` and returns a dication of named fields
+        data = self.struct.unpack_from(self.raw_bytes, 0)
+        super(DataParser, self).__init__(dict(zip(self.fields, data)))
 
     @cached_property()
     def raw(self):
@@ -236,7 +236,7 @@ class LoopDataParserRevB(DataParser):
     def tuple_to_dict(self, key):
         '''Convert key<->tuple to {key1<->value2, key2<->value2 ... }.'''
         for i, value in enumerate(self[key]):
-            self["%s%.2d" % (key, i)] = value
+            self["%s%.2d" % (key, i+1)] = value
         del self[key]
 
     def unpack_storm_date(self):

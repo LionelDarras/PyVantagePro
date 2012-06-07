@@ -190,14 +190,15 @@ def dict_to_csv(items, delimiter=',', header=True):
     return content
 
 
-def dict_to_xml(items, root="vantagepro2"):
+def dict_to_xml(items, root="vantagepro2", group_by="Date"):
     '''Serialize a list of dictionaries to XML.'''
     xml = ''
     for i, item in enumerate(items):
-        xml = "%s<data%d>" % (xml, i)
-        for key, value in item.items():
-            xml = "%s<%s>%s</%s>" % (xml, str(key), str(value), str(key))
-        xml = "%s</data%d>" % (xml, i)
+        group = str(item[group_by]).replace(' ', '').replace(':', '-')
+        xml = "%s<Data-%s>" % (xml, group)
+        for key, value in item:
+                xml = "%s<%s>%s</%s>" % (xml, str(key), str(value), str(key))
+        xml = "%s</Data-%s>" % (xml, group)
     xml = "<%s>%s</%s>" % (root, xml, root)
     return parseString(xml).toprettyxml()
 
@@ -221,7 +222,7 @@ class DataDict(object):
         return DataDict(self)
 
     def __iter__(self):
-        return iter(self.store)
+        return iter(self.store.items())
 
     def __len__(self):
         return len(self.store)
@@ -234,10 +235,10 @@ class DataDict(object):
         return DataDict(data)
 
     def to_xml(self, root="vantagepro2"):
-        return dict_to_xml([self.store,], root)
+        return dict_to_xml((self, ), root)
 
     def to_csv(self, delimiter=',', header=True):
-        return dict_to_csv([self.store,], delimiter, header)
+        return dict_to_csv((self, ), delimiter, header)
 
     def __unicode__(self):
         return "%s" % self.store
