@@ -17,9 +17,12 @@ import time
 from datetime import datetime
 
 from .logger import LOGGER
-from .utils import cached_property, retry, byte_to_string, hex_to_byte
-from .parser import (LoopDataParserRevB, pack_datetime,
-                    unpack_datetime)
+from .utils import (cached_property, retry, byte_to_string, hex_to_byte,
+                    ListDataDict)
+
+from .parser import (LoopDataParserRevB, DmpHeaderParser, DmpPageParser,
+                     ArchiveDataParserRevB, pack_datetime, unpack_datetime,
+                     pack_dmp_date_time)
 
 
 class NoDeviceException(Exception):
@@ -136,18 +139,33 @@ class VantagePro2(object):
         data = self.link.read(99, is_byte=True)
         return LoopDataParserRevB(data)
 
-    def get_data(self, start_date=None, stop_date=None):
+    def get_archives(self, start_date=None, stop_date=None):
         '''Get archive records until `start_date` and `stop_date`.'''
-        if start_date is None:
-            pass
-            # download all archive
-        else:
-            pass
-            # download partial archive
-        if stop_date is not None:
-            pass
-            # split archive
-        return
+        # 1. init empty records
+        records = ListDataDict()
+        #
+        start_date = start_date or datetime(1999, 10, 10, 10, 10, 10)
+        self.run_cmd("DMPAFT", self.ACK)
+        self.run_cmd(pack_dmp_date_time(start_date), self.ACK, is_byte=True)
+        # 5. read header data
+        header = DmpHeaderParser(self.link.read(8, is_byte=True))
+        LOGGER.info('try reading %d dmp pages' % header['Pages'])
+        for i in range(header['Pages']):
+            # 5. read page data
+            dump = DmpPageParser(self.link.read(267, is_byte=True))
+            self.link.write(self.ACK)
+            # 6. loop through archive records
+            offsets = zip(range(0, 260, 52), range(52, 261, 52))
+            for offset in offsets:
+                archive = ArchiParserRevB(data[offset[0]:offset[1]])
+                if archive['Datetime'] is not None:
+                    # 7. verify that record has valid data, and store
+                    archive.crc_error = dump.crc_error
+                    records.append(archive)
+                else:
+                    break
+        LOGGER.info('read pages finish')
+        return records
 
     def __del__(self):
         '''Close link when object is deleted.'''
