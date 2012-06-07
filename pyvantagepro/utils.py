@@ -109,19 +109,6 @@ def byte_to_string(byte):
     return ' '.join(data)
 
 
-def byte_to_binary(byte, num_of_bits=8):
-    '''Convert byte to binary string representation.
-    E.g.
-    >>> hex_to_binary_string("\xFF", 8)
-    '11111111'
-    >>>
-    >>> hex_to_binary_string("\x4A", 16)
-    '0000000001001010'
-    '''
-    buf = byte_to_string(byte).replace(' ', '')
-    return bin(int(buf, 16))[2:].zfill(num_of_bits)
-
-
 def byte_to_binary(byte):
     '''Convert byte to binary string representation.
     E.g.
@@ -154,6 +141,8 @@ def hex_to_binary(hexstr):
     >>> hex_to_binary_string("FF")
     '11111111'
     '''
+    if sys.version_info[0] >= 3:
+        return ''.join(byte_to_binary(b) for b in hex_to_byte(hexstr))
     return ''.join(byte_to_binary(ord(b)) for b in hex_to_byte(hexstr))
 
 def bin_to_integer(buf, start=0, stop=None):
@@ -174,39 +163,46 @@ def hex_to_byte(hexstr):
     return binascii.unhexlify(hexstr.replace(' ', '').encode('utf-8'))
 
 
-def dict_to_csv(items, delimiter=',', header=True):
+def dict_to_csv(items, delimiter, header):
     '''Serialize list of dictionaries to csv.'''
-    delimiter = str(delimiter)
-    output = StringIO.StringIO()
-    csvwriter = csv.DictWriter(output, fieldnames=items[0].keys(),
-                               delimiter=delimiter)
-    if header:
-        csvwriter.writerow(dict((key,key) for key in items[0].keys()))
-        # writeheader is not supported in python2.6
-#        csvwriter.writeheader()
-    for item in items:
-      csvwriter.writerow(item)
+    content = ""
+    if len(items) > 0:
+        delimiter = str(delimiter)
+        output = StringIO.StringIO()
+        csvwriter = csv.DictWriter(output, fieldnames=items[0].keys(),
+                                   delimiter=delimiter)
+        if header:
+            csvwriter.writerow(dict((key,key) for key in items[0].keys()))
+            # writeheader is not supported in python2.6
+            # csvwriter.writeheader()
+        for item in items:
+          csvwriter.writerow(item)
 
-    content = output.getvalue()
-    output.close()
+        content = output.getvalue()
+        output.close()
     return content
 
 
-def dict_to_xml(items, root="vantagepro2", group_by="Date"):
+def dict_to_xml(items, root, key_title):
     '''Serialize a list of dictionaries to XML.'''
     xml = ''
-    for i, item in enumerate(items):
-        group = str(item[group_by]).replace(' ', '').replace(':', '-')
-        xml = "%s<Data-%s>" % (xml, group)
-        for key, value in item:
-                xml = "%s<%s>%s</%s>" % (xml, str(key), str(value), str(key))
-        xml = "%s</Data-%s>" % (xml, group)
-    xml = "<%s>%s</%s>" % (root, xml, root)
-    return parseString(xml).toprettyxml()
+    if len(items) > 0:
+        for i, item in enumerate(items):
+            if key_title is not None:
+                key_title = str(item[key_title]).replace(' ', '').replace(':', '-')
+            else:
+                key_title = "%d" % i
+            xml = "%s<Data-%s>" % (xml, key_title)
+            for key, value in item.items():
+                    xml = "%s<%s>%s</%s>" % (xml, str(key), str(value), str(key))
+            xml = "%s</Data-%s>" % (xml, key_title)
+        xml = "<%s>%s</%s>" % (root, xml, root)
+        xml = parseString(xml).toprettyxml()
+    return xml
 
 
 class DataDict(object):
-    '''Implements dict with somes additional methods.'''
+    '''Implements sorteddict with somes additional methods.'''
     def __init__(self, initial_dict = None):
         initial_dict = initial_dict or {}
         self.store = sorteddict(initial_dict)
@@ -223,8 +219,20 @@ class DataDict(object):
     def copy(self):
         return DataDict(self)
 
+    def keys(self):
+        return self.store.keys()
+
+    def values(self):
+        return self.store.values()
+
+    def items(self):
+        return self.store.items()
+
+    def __contains__(self, key):
+        return key in self.store.keys()
+
     def __iter__(self):
-        return iter(self.store.items())
+        return iter(self.store)
 
     def __len__(self):
         return len(self.store)
@@ -236,11 +244,11 @@ class DataDict(object):
             del data[key]
         return DataDict(data)
 
-    def to_xml(self, root="vantagepro2"):
-        return dict_to_xml((self, ), root)
+    def to_xml(self, root="VantagePro", key_title=None):
+        return dict_to_xml([self.store], root, key_title)
 
     def to_csv(self, delimiter=',', header=True):
-        return dict_to_csv((self, ), delimiter, header)
+        return dict_to_csv([self.store], delimiter, header)
 
     def __unicode__(self):
         return "%s" % self.store
@@ -250,3 +258,10 @@ class DataDict(object):
 
     def __repr__(self):
         return self.store.__repr__()
+
+class ListDataDict(list):
+    def to_xml(self, root="VantagePro", key_title=None):
+        return dict_to_xml(self, root, key_title)
+
+    def to_csv(self, delimiter=',', header=True):
+        return dict_to_csv(self, delimiter, header)
