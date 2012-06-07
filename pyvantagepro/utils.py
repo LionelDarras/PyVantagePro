@@ -99,12 +99,14 @@ class retry(object):
 
 def byte_to_string(byte):
     '''Convert a byte string to it's hex string representation.'''
-    hexstr = str(binascii.hexlify(byte))
+    if sys.version_info[0] >= 3:
+        hexstr = str(binascii.hexlify(byte), "utf-8")
+    else:
+        hexstr = str(binascii.hexlify(byte))
     data = []
     for i in range(0, len(hexstr), 2):
         data.append("%s" % hexstr[i:i + 2].upper())
     return ' '.join(data)
-    return hexstr
 
 
 def byte_to_binary(byte, num_of_bits=8):

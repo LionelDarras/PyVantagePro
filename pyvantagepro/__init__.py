@@ -69,7 +69,6 @@ def extract(argv=None, stdout=sys.stdout, stdin=sys.stdin):
     vp = VantagePro2(link)
 
     format_ = args.format.lower()
-
     if format_ == "xml":
         data = vp.get_current_data().to_xml()
     elif format_ == "csv":

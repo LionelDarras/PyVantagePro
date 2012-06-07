@@ -132,11 +132,6 @@ class VantagePro2(object):
 
     def get_current_data(self):
         '''Get real-time data.'''
-#        data = str("4c4f4f14003e032175da0239d10204056301ffffffffffffffffffff" \
-#                "ffffffffff4effffffffffffff0000ffff7f0000ffff000000000000" \
-#                "000000000000ffffffffffffff000000000000000000000000000000" \
-#                "0000002703064b26023e070a0d1163")
-#        data = hex_to_byte(data)
         self.run_cmd("LOOP 1", self.ACK)
         data = self.link.read(99, is_byte=True)
         return LoopDataParserRevB(data)

@@ -11,26 +11,86 @@
 '''
 
 from __future__ import division, unicode_literals
-
+from datetime import datetime
 from . import LOGGER
-from ..parser import (LoopDataParserRevB, VantageProCRC)
+from ..parser import (LoopDataParserRevB, VantageProCRC, pack_datetime,
+                      unpack_datetime )
 from ..utils import hex_to_byte
+
 
 class TestLoopParser:
     ''' Test parser.'''
     def setup_class(self):
         '''Setup common data.'''
-        data =  str("4c4f4f14003e032175da0239d10204056301ffffffffffffffff" \
-                "ffffffffffffff4effffffffffffff0000ffff7f0000ffff00000000" \
-                "0000000000000000ffffffffffffff00000000000000000000000000" \
-                "00000000002703064b26023e070a0d1163")
-        self.data = hex_to_byte(data)
+        self.data = "4C4F4FC4006802547B52031EFF7FFFFFFF7FFFFFFFFFFFFF" \
+                    "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF7F0000" \
+                    "FFFF000000003C03000000000000FFFFFFFFFFFFFF000000" \
+                    "0000000000000000000000000000008C00060C610183070A" \
+                    "0D2A3C"
+        self.bytes = hex_to_byte(self.data)
 
     def test_check_crc(self):
         '''Test crc verification.'''
-        assert VantageProCRC(self.data).check()
+        assert VantageProCRC(self.bytes).check()
+
+    def test_check_raw_data(self):
+        item = LoopDataParserRevB(self.bytes)
+        assert item.raw.replace(' ', '') == self.data
+        assert item.raw_bytes == self.bytes
 
     def test_unpack(self):
         '''Test unpack loop packet.'''
-        item = LoopDataParserRevB(self.data)
-        assert item["TempIn"] == 73.0
+        item = LoopDataParserRevB(self.bytes)
+
+        assert item['Alarm01HighLeafTemp'] == 0
+        assert item['Alarm01HighLeafWet'] == 0
+        assert item['Alarm01HighSoilMois'] == 0
+        assert item['Alarm01HighSoilTemp'] == 0
+        assert item['Alarm01LowLeafTemp'] == 0
+        assert item['Alarm01LowLeafWet'] == 0
+        assert item['Alarm01LowSoilMois'] == 0
+        assert item['Alarm01LowSoilTemp'] == 0
+        assert item['AlarmEx01HighHum'] == 0
+        assert item['AlarmInFallBarTrend'] == 0
+        assert item['AlarmOut10minAvgSpeed'] == 0
+        assert item['AlarmRain15min'] == 0
+        assert item['BarTrend'] == 196
+        assert item['Barometer'] == 31.572
+        assert item['BatteryStatus'] == 0
+        assert item['BatteryVolts'] == 0.8203125
+        assert item['ETDay'] == 0.0
+        assert item['ETMonth'] == 0.0
+        assert item['ETYear'] == 0.0
+        assert item['ExtraTemps01'] == 255
+        assert item['ForecastIcon'] == 6
+        assert item['ForecastRuleNo'] == 12
+        assert item['HumExtra01'] == 255
+        assert item['HumIn'] == 30
+        assert item['HumOut'] == 255
+        assert item['LeafTemps01'] == 255
+        assert item['LeafWetness01'] == 255
+        assert item['LeafWetness04'] == 0
+        assert item['RainDay'] == 0.0
+        assert item['RainMonth'] == 0.0
+        assert item['RainRate'] == 655.35
+        assert item['RainStorm'] == 0.0
+        assert item['RainYear'] == 8.28
+        assert item['SoilMoist01'] == 255
+        assert item['SolarRad'] == 32767
+        assert item['StormStartDate'] == '2127-15-31'
+        assert item['SunRise'] == '03:53'
+        assert item['SunSet'] == '19:23'
+        assert item['TempIn'] == 85.0
+        assert item['TempOut'] == 3276.7
+        assert item['UV'] == 255
+        assert item['WindDir'] == 32767
+        assert item['WindSpeed'] == 255
+        assert item['WindSpeed10Min'] == 255
+
+def test_datetime_parser():
+    '''Test pack and unpack datetime.'''
+    data = hex_to_byte("25 35 0A 07 06 70 60 BA")
+    assert VantageProCRC(data).check()
+    date = unpack_datetime(data)
+    assert date == datetime(2012, 6, 7, 10, 53, 37)
+    assert data == pack_datetime(date)
