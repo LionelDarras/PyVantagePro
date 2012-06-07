@@ -10,11 +10,12 @@
 
 '''
 
-from __future__ import division, unicode_literals
+from __future__ import unicode_literals
 from datetime import datetime
+
 from . import LOGGER
 from ..parser import (LoopDataParserRevB, VantageProCRC, pack_datetime,
-                      unpack_datetime )
+                      unpack_datetime)
 from ..utils import hex_to_byte
 
 
