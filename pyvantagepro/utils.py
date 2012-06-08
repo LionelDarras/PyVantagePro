@@ -189,7 +189,7 @@ def dict_to_xml(items, root, key_title):
     if len(items) > 0:
         for i, item in enumerate(items):
             if key_title is not None:
-                key_title = str(item[key_title]).replace(' ', '').replace(':', '-')
+                key_title = normalize_string(item[key_title])
             else:
                 key_title = "%d" % i
             xml = "%s<Data-%s>" % (xml, key_title)
@@ -265,3 +265,21 @@ class ListDataDict(list):
 
     def to_csv(self, delimiter=',', header=True):
         return dict_to_csv(self, delimiter, header)
+
+
+def normalize_string(string):
+    '''Remove special char in string'''
+    import unicodedata
+    string = "%s" % string
+    string = string.replace('\'', '-')
+    string = string.replace(':', '-')
+    string = unicodedata.normalize('NFKD', string)
+    string = string.replace(' ','_').lower()
+    final_string = string
+    for char in string:
+        if not unicodedata.category(char) in ['Nd','Ll','Pd','Pc']:
+            final_string = final_string.replace(char,'')
+    final_string = final_string.lower().replace('_','-')
+    while final_string.find('--') != -1:
+        final_string = final_string.replace('--','-')
+    return final_string

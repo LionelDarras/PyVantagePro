@@ -107,3 +107,9 @@ def test_bin_integer():
     assert bin_to_integer(hexstr, 0, 1) == 0
     assert bin_to_integer(hexstr, 0, 2) == 2
     assert bin_to_integer(hexstr, 0, 3) == 6
+
+def test_normalize_string():
+    from ..utils import normalize_string
+    assert normalize_string("éç") == "ec"
+    d = datetime(2012,10,10,10,10,10)
+    assert normalize_string(d) == "2012-10-10-10-10-10"

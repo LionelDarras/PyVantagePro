@@ -279,8 +279,8 @@ class ArchiveDataParserRevB(DataParser):
         self['raw_datestamp'] = bytes_to_binary(self.raw_bytes[0:4])
         self['Datetime'] = unpack_dmp_date_time(self['DateStamp'],
                                                 self['TimeStamp'])
-#        del self['DateStamp']
-#        del self['TimeStamp']
+        del self['DateStamp']
+        del self['TimeStamp']
         self['TempOut'] = self['TempOut'] / 10
         self['TempOutHi'] = self['TempOutHi'] / 10
         self['TempOutLow'] = self['TempOutLow'] / 10
@@ -302,6 +302,9 @@ class ArchiveDataParserRevB(DataParser):
         self.tuple_to_dict("SoilTemps")
         self.tuple_to_dict("LeafTemps")
         self.tuple_to_dict("ExtraTemps")
+        self.tuple_to_dict("SoilMoist")
+        self.tuple_to_dict("LeafWetness")
+        self.tuple_to_dict("ExtraHum")
 
 
 class DmpHeaderParser(DataParser):
@@ -328,7 +331,6 @@ def pack_dmp_date_time(d):
     vpdate = d.day + d.month * 32 + (d.year - 2000) * 512
     vptime = 100 * d.hour + d.minute
     data = struct.pack(b'HH', vpdate, vptime)
-#    import pdb; pdb.set_trace()
     return VantageProCRC(data).data_with_checksum
 
 

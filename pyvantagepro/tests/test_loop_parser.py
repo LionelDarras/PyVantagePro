@@ -101,5 +101,5 @@ def test_dump_date_time():
     import struct
     d = datetime(2012, 10, 26, 10, 10)
     packed = pack_dmp_date_time(d)
-    date, time, _ = struct.unpack(b">HHH", packed)
+    date, time, _ = struct.unpack(b"HHH", packed)
     assert d == unpack_dmp_date_time(date, time)

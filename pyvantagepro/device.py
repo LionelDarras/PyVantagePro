@@ -154,15 +154,11 @@ class VantagePro2(object):
         '''Get archive records until `start_date` and `stop_date` with
         generator.'''
         # 2000-01-01 0:00:01
-        # start_date = start_date or datetime(2000, 1, 1, 0, 0, 1)
-        start_date = start_date or datetime(2012, 6, 8, 15, 20, 0)
+        # start_date = start_date or datetime(2012, 6, 8, 15, 20, 0)
+        start_date = start_date or datetime(2000, 1, 1, 0, 0, 1)
         self.run_cmd("DMPAFT", self.ACK)
         # I think that date_time_crc is incorrect...
         self.link.write(pack_dmp_date_time(start_date), is_byte=True)
-        from .utils import bytes_to_binary
-        send_raw_datestamp = bytes_to_binary(pack_dmp_date_time(start_date)[0:4])
-
-
         # timeout must be at least 2 seconds
         timeout = (self.link.timeout or 1) * 2
         ack = self.link.read(len(self.ACK), timeout=timeout)
@@ -193,11 +189,10 @@ class VantagePro2(object):
             for offset in offsets:
                 raw_record = raw_records[offset[0]:offset[1]]
                 record = ArchiveDataParserRevB(raw_record)
-                print("Send date_time %s " % send_raw_datestamp)
-                print("Recv date_time %s " % record['raw_datestamp'])
                 # verify that record has valid data, and store
                 r_time = record['Datetime']
                 if r_time is None:
+                    LOGGER.error('Invalid record detected')
                     finish = True
                     break
                 record.crc_error = dump.crc_error
@@ -205,10 +200,11 @@ class VantagePro2(object):
                 yield record
                 r_index += 1
             if finish:
-                LOGGER.info('Cancel downloading')
+                LOGGER.info('Canceling download')
                 self.link.write(self.ESC)
                 break
             else:
-                LOGGER.info('Downloading next page')
+                if header['Pages'] - 1 == i:
+                    LOGGER.info('Start downloading next page')
                 self.link.write(self.ACK)
-        LOGGER.info('Pages download process was finished')
+        LOGGER.info('Pages Downloading process was finished')
