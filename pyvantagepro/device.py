@@ -35,6 +35,11 @@ class BadAckException(Exception):
     value = __doc__
 
 
+class BadCRCException(Exception):
+    '''The CRC is not correct.'''
+    value = __doc__
+
+
 class VantagePro2(object):
     '''A class capable of reading raw (binary) weather data from a
     Vantage Pro 2 console.'''
@@ -51,6 +56,8 @@ class VantagePro2(object):
 
     def __init__(self, link):
         self.link = link
+        # flush reception buffer
+#        self.link.read()
 
     def wake_up(self):
         '''Wakeup the console.'''
@@ -83,10 +90,12 @@ class VantagePro2(object):
         '''Read and check acknowledgement.'''
         ack = self.link.read(len(wait_ack))
         if wait_ack == ack:
-            LOGGER.info("Check ACK: OK")
+            message = "Check ACK: OK (%s == %s)" % (repr(wait_ack), repr(ack))
+            LOGGER.info(message)
             return True
         else:
-            LOGGER.error("Check ACK: BAD")
+            message = "Check ACK: BAD (%s != %s)" % (repr(wait_ack), repr(ack))
+            LOGGER.error(message)
             return False
 
     @cached_property(ttl=3600)
@@ -143,33 +152,52 @@ class VantagePro2(object):
         '''Get archive records until `start_date` and `stop_date`.'''
         # 1. init empty records
         records = ListDataDict()
-        #
-        start_date = start_date or datetime(1999, 10, 10, 10, 10, 10)
+        # 2012-06-08 10:00:00
+        start_date = start_date or datetime(2012, 6, 8, 10, 30, 0)
         self.run_cmd("DMPAFT", self.ACK)
-        self.run_cmd(pack_dmp_date_time(start_date), self.ACK, is_byte=True)
+        self.link.write(pack_dmp_date_time(start_date), is_byte=True)
+        if not self.check_ack(self.ACK):
+            raise BadAckException()
         # 5. read header data
         header = DmpHeaderParser(self.link.read(8, is_byte=True))
+        # Write ACK
+        if header.crc_error:
+            raise BadCRCException()
+        else:
+            self.link.write(self.ACK)
         LOGGER.info('try reading %d dmp pages' % header['Pages'])
+        old_record_datetime = None
+        finish = False
         for i in range(header['Pages']):
             # 5. read page data
-            dump = DmpPageParser(self.link.read(267, is_byte=True))
+            raw_dump = self.link.read(267, is_byte=True)
+            dump = DmpPageParser(raw_dump)
+            LOGGER.info('Dump page no %d ' % dump['Index'])
+            raw_records = dump["Records"]
             self.link.write(self.ACK)
             # 6. loop through archive records
             offsets = zip(range(0, 260, 52), range(52, 261, 52))
             for offset in offsets:
-                archive = ArchiParserRevB(data[offset[0]:offset[1]])
-                if archive['Datetime'] is not None:
+                raw_record = raw_records[offset[0]:offset[1]]
+                record = ArchiveDataParserRevB(raw_record)
+                print ">>>>> record['Datetime'] = %s" % record['Datetime']
+                if record['Datetime'] is not None:
+                    if old_record_datetime is not None:
+                        if record['Datetime'] < old_record_datetime:
+                            finish = True
+                            break
                     # 7. verify that record has valid data, and store
-                    archive.crc_error = dump.crc_error
-                    records.append(archive)
+                    record.crc_error = dump.crc_error
+                    records.append(record)
                 else:
+                    finish = True
                     break
-        LOGGER.info('read pages finish')
+                old_record_datetime = record['Datetime']
+            if finish:
+                break
+        self.link.write(self.ESC)
+        data = self.link.read(is_byte=True)
+        dump = DmpPageParser(data)
+        LOGGER.info('Dump page no %d ' % dump['Index'])
+        LOGGER.info('pages download finish')
         return records
-
-    def __del__(self):
-        '''Close link when object is deleted.'''
-        try:
-            self.link.close()
-        except:
-            pass

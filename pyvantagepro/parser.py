@@ -91,7 +91,7 @@ class DataParser(DataDict):
         self.fields, format_t = zip(*data_format)
         self.crc_error = False
         if "CRC" in self.fields:
-            self.crc_error = VantageProCRC(data).check()
+            self.crc_error = not VantageProCRC(data).check()
         format_t = str("%s%s" % (order, ''.join(format_t)))
         self.struct = struct.Struct(format = format_t)
 
@@ -278,8 +278,8 @@ class ArchiveDataParserRevB(DataParser):
         super(ArchiveDataParserRevB, self).__init__(data, self.ARCHIVE_FORMAT)
         self['Datetime'] = self.unpack_dmp_date_time(self['DateStamp'],
                                                      self['TimeStamp'])
-        del self['DateStamp']
-        del self['TimeStamp']
+#        del self['DateStamp']
+#        del self['TimeStamp']
         self['TempOut'] = self['TempOut'] / 10
         self['TempOutHi'] = self['TempOutHi'] / 10
         self['TempOutLow'] = self['TempOutLow'] / 10
@@ -290,19 +290,19 @@ class ArchiveDataParserRevB(DataParser):
         self['WindHiDir'] = int(self['WindHiDir'] * 22.5)
         self['WindHiDir'] = int(self['WindAvgDir'] * 22.5)
         self['SoilTemps'] = tuple(
-                t-90 for t in struct.unpack('4B', self['SoilTemps']))
-        self['ExtraHum'] = struct.unpack('2B', self['ExtraHum'])
-        self['SoilMoist'] = struct.unpack('4B', self['SoilMoist'])
+                t-90 for t in struct.unpack(b'4B', self['SoilTemps']))
+        self['ExtraHum'] = struct.unpack(b'2B', self['ExtraHum'])
+        self['SoilMoist'] = struct.unpack(b'4B', self['SoilMoist'])
         self['LeafTemps']   = tuple(
-                t-90 for t in struct.unpack('2B', self['LeafTemps']))
-        self['LeafWetness'] = struct.unpack('2B', self['LeafWetness'])
+                t-90 for t in struct.unpack(b'2B', self['LeafTemps']))
+        self['LeafWetness'] = struct.unpack(b'2B', self['LeafWetness'])
         self['ExtraTemps'] = tuple(
-                t-90 for t in struct.unpack('3B', self['ExtraTemps']))
+                t-90 for t in struct.unpack(b'3B', self['ExtraTemps']))
         self.tuple_to_dict("SoilTemps")
         self.tuple_to_dict("LeafTemps")
         self.tuple_to_dict("ExtraTemps")
 
-    def unpack_archive_date_time(self, date, time):
+    def unpack_dmp_date_time(self, date, time):
         '''Unpack `date` and `time` to datetime'''
         if date != 0xffff and time != 0xffff:
             day   = date & 0x1f                     # 5 bits
@@ -323,7 +323,7 @@ class DmpHeaderParser(DataParser):
 
 class DmpPageParser(DataParser):
     DMP_FORMAT = (
-        ('Index',   'H'),  ('Records',   '260s'),  ('unused',     '4B'),
+        ('Index',   'B'),  ('Records',   '260s'),  ('unused',     '4B'),
         ('CRC',   'H'),
     )
 
@@ -333,9 +333,11 @@ class DmpPageParser(DataParser):
 
 def pack_dmp_date_time(d):
     '''Pack `datetime` to DateStamp and TimeStamp VantagePro2 with CRC.'''
+    year = 2000 if d.year < 2000 else d.year
     vpdate = d.day + d.month * 32 + (year - 2000) * 512
-    vptime = (100 * d.hour + d.minute);
-    data = struct.pack(b'>2H', vpdate, vptime)
+    vptime = (100 * d.hour + d.minute)
+#    import pdb; pdb.set_trace()
+    data = struct.pack(b'>HH', vpdate, vptime)
     return VantageProCRC(data).data_with_checksum
 
 
