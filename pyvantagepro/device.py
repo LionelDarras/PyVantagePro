@@ -56,8 +56,6 @@ class VantagePro2(object):
 
     def __init__(self, link):
         self.link = link
-        # flush reception buffer
-#        self.link.read()
 
     def wake_up(self):
         '''Wakeup the console.'''
@@ -150,54 +148,67 @@ class VantagePro2(object):
 
     def get_archives(self, start_date=None, stop_date=None):
         '''Get archive records until `start_date` and `stop_date`.'''
-        # 1. init empty records
-        records = ListDataDict()
-        # 2012-06-08 10:00:00
-        start_date = start_date or datetime(2012, 6, 8, 10, 30, 0)
+        return ListDataDict(self.get_archives_generator(start_date, stop_date))
+
+    def get_archives_generator(self, start_date=None, stop_date=None):
+        '''Get archive records until `start_date` and `stop_date` with
+        generator.'''
+        # 2000-01-01 0:00:01
+        # start_date = start_date or datetime(2000, 1, 1, 0, 0, 1)
+        start_date = start_date or datetime(2012, 6, 8, 15, 20, 0)
         self.run_cmd("DMPAFT", self.ACK)
+        # I think that date_time_crc is incorrect...
         self.link.write(pack_dmp_date_time(start_date), is_byte=True)
-        if not self.check_ack(self.ACK):
+        from .utils import bytes_to_binary
+        send_raw_datestamp = bytes_to_binary(pack_dmp_date_time(start_date)[0:4])
+
+
+        # timeout must be at least 2 seconds
+        timeout = (self.link.timeout or 1) * 2
+        ack = self.link.read(len(self.ACK), timeout=timeout)
+        if ack != self.ACK:
             raise BadAckException()
-        # 5. read header data
+        # Read dump header and get number of pages
         header = DmpHeaderParser(self.link.read(8, is_byte=True))
-        # Write ACK
+        # Write ACK if crc is good. Else, send cancel.
         if header.crc_error:
+            self.link.write(self.CANCEL)
             raise BadCRCException()
         else:
             self.link.write(self.ACK)
-        LOGGER.info('try reading %d dmp pages' % header['Pages'])
-        old_record_datetime = None
+        LOGGER.info('Begin downloading %d dump pages' % header['Pages'])
         finish = False
+        r_index = 0
         for i in range(header['Pages']):
-            # 5. read page data
+            # Read one dump page
             raw_dump = self.link.read(267, is_byte=True)
+            # Parse dump page
             dump = DmpPageParser(raw_dump)
             LOGGER.info('Dump page no %d ' % dump['Index'])
+            # Get the 5 raw records
             raw_records = dump["Records"]
-            self.link.write(self.ACK)
-            # 6. loop through archive records
+            # loop through archive records
             offsets = zip(range(0, 260, 52), range(52, 261, 52))
+            # offsets = [(0, 52), (52, 104), ... , (156, 208), (208, 260)]
             for offset in offsets:
                 raw_record = raw_records[offset[0]:offset[1]]
                 record = ArchiveDataParserRevB(raw_record)
-                print ">>>>> record['Datetime'] = %s" % record['Datetime']
-                if record['Datetime'] is not None:
-                    if old_record_datetime is not None:
-                        if record['Datetime'] < old_record_datetime:
-                            finish = True
-                            break
-                    # 7. verify that record has valid data, and store
-                    record.crc_error = dump.crc_error
-                    records.append(record)
-                else:
+                print("Send date_time %s " % send_raw_datestamp)
+                print("Recv date_time %s " % record['raw_datestamp'])
+                # verify that record has valid data, and store
+                r_time = record['Datetime']
+                if r_time is None:
                     finish = True
                     break
-                old_record_datetime = record['Datetime']
+                record.crc_error = dump.crc_error
+                LOGGER.info("Record-%.4d - Datetime : %s" % (r_index, r_time))
+                yield record
+                r_index += 1
             if finish:
+                LOGGER.info('Cancel downloading')
+                self.link.write(self.ESC)
                 break
-        self.link.write(self.ESC)
-        data = self.link.read(is_byte=True)
-        dump = DmpPageParser(data)
-        LOGGER.info('Dump page no %d ' % dump['Index'])
-        LOGGER.info('pages download finish')
-        return records
+            else:
+                LOGGER.info('Downloading next page')
+                self.link.write(self.ACK)
+        LOGGER.info('Pages download process was finished')

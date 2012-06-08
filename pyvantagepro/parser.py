@@ -276,8 +276,9 @@ class ArchiveDataParserRevB(DataParser):
 
     def __init__(self, data):
         super(ArchiveDataParserRevB, self).__init__(data, self.ARCHIVE_FORMAT)
-        self['Datetime'] = self.unpack_dmp_date_time(self['DateStamp'],
-                                                     self['TimeStamp'])
+        self['raw_datestamp'] = bytes_to_binary(self.raw_bytes[0:4])
+        self['Datetime'] = unpack_dmp_date_time(self['DateStamp'],
+                                                self['TimeStamp'])
 #        del self['DateStamp']
 #        del self['TimeStamp']
         self['TempOut'] = self['TempOut'] / 10
@@ -302,15 +303,6 @@ class ArchiveDataParserRevB(DataParser):
         self.tuple_to_dict("LeafTemps")
         self.tuple_to_dict("ExtraTemps")
 
-    def unpack_dmp_date_time(self, date, time):
-        '''Unpack `date` and `time` to datetime'''
-        if date != 0xffff and time != 0xffff:
-            day   = date & 0x1f                     # 5 bits
-            month = (date >> 5) & 0x0f              # 4 bits
-            year  = ((date >> 9) & 0x7f) + 2000     # 7 bits
-            hour, min_  = divmod(time,100)
-            return datetime(year, month, day, hour, min_)
-
 
 class DmpHeaderParser(DataParser):
     DMP_FORMAT = (
@@ -333,13 +325,22 @@ class DmpPageParser(DataParser):
 
 def pack_dmp_date_time(d):
     '''Pack `datetime` to DateStamp and TimeStamp VantagePro2 with CRC.'''
-    year = 2000 if d.year < 2000 else d.year
-    vpdate = d.day + d.month * 32 + (year - 2000) * 512
-    vptime = (100 * d.hour + d.minute)
+    vpdate = d.day + d.month * 32 + (d.year - 2000) * 512
+    vptime = 100 * d.hour + d.minute
+    data = struct.pack(b'HH', vpdate, vptime)
 #    import pdb; pdb.set_trace()
-    data = struct.pack(b'>HH', vpdate, vptime)
     return VantageProCRC(data).data_with_checksum
 
+
+def unpack_dmp_date_time(date, time, crc=None):
+    '''Unpack `date` and `time` to datetime'''
+#    print ("Recv datestamp : %s %s" % (date, time))
+    if date != 0xffff and time != 0xffff:
+        day   = date & 0x1f                     # 5 bits
+        month = (date >> 5) & 0x0f              # 4 bits
+        year  = ((date >> 9) & 0x7f) + 2000     # 7 bits
+        hour, min_  = divmod(time,100)
+        return datetime(year, month, day, hour, min_)
 
 
 def pack_datetime(dtime):

@@ -18,7 +18,6 @@ from ..parser import (LoopDataParserRevB, VantageProCRC, pack_datetime,
                       unpack_datetime)
 from ..utils import hex_to_byte
 
-
 class TestLoopParser:
     ''' Test parser.'''
     def setup_class(self):
@@ -95,3 +94,12 @@ def test_datetime_parser():
     date = unpack_datetime(data)
     assert date == datetime(2012, 6, 7, 10, 53, 37)
     assert data == pack_datetime(date)
+
+
+def test_dump_date_time():
+    from ..parser import pack_dmp_date_time, unpack_dmp_date_time
+    import struct
+    d = datetime(2012, 10, 26, 10, 10)
+    packed = pack_dmp_date_time(d)
+    date, time, _ = struct.unpack(b">HHH", packed)
+    assert d == unpack_dmp_date_time(date, time)
