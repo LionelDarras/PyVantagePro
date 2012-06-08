@@ -172,11 +172,11 @@ def dict_to_csv(items, delimiter, header):
         csvwriter = csv.DictWriter(output, fieldnames=items[0].keys(),
                                    delimiter=delimiter)
         if header:
-            csvwriter.writerow(dict((key,key) for key in items[0].keys()))
+#            csvwriter.writerow(dict((key,key) for key in items[0].keys()))
             # writeheader is not supported in python2.6
-            # csvwriter.writeheader()
+             csvwriter.writeheader()
         for item in items:
-          csvwriter.writerow(item)
+          csvwriter.writerow(dict(item))
 
         content = output.getvalue()
         output.close()
@@ -189,13 +189,13 @@ def dict_to_xml(items, root, key_title):
     if len(items) > 0:
         for i, item in enumerate(items):
             if key_title is not None:
-                key_title = normalize_string(item[key_title])
+                title = normalize_string(item[key_title])
             else:
-                key_title = "%d" % i
-            xml = "%s<Data-%s>" % (xml, key_title)
+                title = "%d" % i
+            xml = "%s<Data-%s>" % (xml, title)
             for key, value in item.items():
                     xml = "%s<%s>%s</%s>" % (xml, str(key), str(value), str(key))
-            xml = "%s</Data-%s>" % (xml, key_title)
+            xml = "%s</Data-%s>" % (xml, title)
         xml = "<%s>%s</%s>" % (root, xml, root)
         xml = parseString(xml).toprettyxml()
     return xml
@@ -261,10 +261,10 @@ class DataDict(object):
 
 class ListDataDict(list):
     def to_xml(self, root="VantagePro", key_title=None):
-        return dict_to_xml(self, root, key_title)
+        return dict_to_xml(list(self), root, key_title)
 
     def to_csv(self, delimiter=',', header=True):
-        return dict_to_csv(self, delimiter, header)
+        return dict_to_csv(list(self), delimiter, header)
 
 
 def normalize_string(string):
