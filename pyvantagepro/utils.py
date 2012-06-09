@@ -14,15 +14,28 @@ import time
 import csv
 import binascii
 import struct
+from blist import sorteddict
+from xml.dom.minidom import parseString
+
+# Type compatibilite between python3 and python2
 if sys.version_info[0] >= 3:
     # Python 3
     import io as StringIO
+    text_type = str
+    byte_type = bytes
 else:
     # Python 2
+    text_type = unicode
+    byte_type = str
     import cStringIO as StringIO
 
-from blist import sorteddict
-from xml.dom.minidom import parseString
+
+def is_text(data):
+    return isinstance(data, text_type)
+
+
+def is_bytes(data):
+    return isinstance(data, byte_type)
 
 
 class cached_property(object):
@@ -244,7 +257,7 @@ class DataDict(object):
             del data[key]
         return DataDict(data)
 
-    def to_xml(self, root="VantagePro", key_title=None):
+    def to_xml(self, root="VantagePro", key_title="Datetime"):
         return dict_to_xml([self.store], root, key_title)
 
     def to_csv(self, delimiter=',', header=True):
@@ -260,7 +273,7 @@ class DataDict(object):
         return self.store.__repr__()
 
 class ListDataDict(list):
-    def to_xml(self, root="VantagePro", key_title=None):
+    def to_xml(self, root="VantagePro", key_title="Datetime"):
         return dict_to_xml(list(self), root, key_title)
 
     def to_csv(self, delimiter=',', header=True):
