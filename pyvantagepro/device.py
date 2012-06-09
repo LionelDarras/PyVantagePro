@@ -18,7 +18,7 @@ from datetime import datetime
 
 from .logger import LOGGER
 from .utils import (cached_property, retry, byte_to_string, hex_to_byte,
-                    ListDataDict)
+                    ListDataDict, is_bytes, is_text)
 
 from .parser import (LoopDataParserRevB, DmpHeaderParser, DmpPageParser,
                      ArchiveDataParserRevB, pack_datetime, unpack_datetime,
@@ -56,72 +56,85 @@ class VantagePro2(object):
 
     def __init__(self, link):
         self.link = link
-
-    def wake_up(self):
-        '''Wakeup the console.'''
-        LOGGER.info("try wake up console")
-        self.link.write(self.WAKE_STR)
-        if self.check_ack(self.WAKE_ACK):
-            self.last_wake_up = time.time()
-            return True
-        raise NoDeviceException()
+        self.check_revision()
 
     @retry(tries=3, delay=1)
-    def run_cmd(self, cmd, wait_ack=None, is_byte=False):
-        '''Write a single command. If `wait_ack` is not None, the function must
-        check that acknowledgement is the one expected.'''
-        self.wake_up()
-        if is_byte:
-            LOGGER.info("try send : %s" % byte_to_string(cmd))
-            self.link.write(cmd, is_byte)
-        else:
-            LOGGER.info("try send : %s" % cmd)
-            self.link.write("%s\n" % cmd)
-        if wait_ack is None:
-            return True
-        else:
-            if self.check_ack(wait_ack):
-                return True
-            raise BadAckException()
-
-    def check_ack(self, wait_ack):
-        '''Read and check acknowledgement.'''
+    def wake_up(self):
+        '''Wakeup the console.'''
+        wait_ack = self.WAKE_ACK
+        LOGGER.info("try wake up console")
+        self.link.write(self.WAKE_STR)
         ack = self.link.read(len(wait_ack))
         if wait_ack == ack:
-            message = "Check ACK: OK (%s == %s)" % (repr(wait_ack), repr(ack))
-            LOGGER.info(message)
+            LOGGER.info("Check ACK: OK (%s)" % (repr(ack)))
             return True
+        LOGGER.error("Check ACK: BAD (%s != %s)" % (repr(wait_ack), repr(ack)))
+        raise NoDeviceException()
+
+    @retry(tries=3, delay=0.5)
+    def send(self, data, wait_ack=None, timeout=None):
+        '''Send data to station.
+            - If `wait_ack` is not None, the function must check that
+              acknowledgement is the one expected.
+            - The `timeout` allows to reading the ACK with this timeout.'''
+        if is_bytes(data):
+            LOGGER.info("try send : %s" % byte_to_string(data))
+            self.link.write(data, is_byte=True)
         else:
-            message = "Check ACK: BAD (%s != %s)" % (repr(wait_ack), repr(ack))
-            LOGGER.error(message)
-            return False
+            LOGGER.info("try send : %s" % data)
+            self.link.write("%s\n" % data)
+        if wait_ack is None:
+            return True
+        ack = self.link.read(len(wait_ack), timeout=timeout)
+        if wait_ack == ack:
+            LOGGER.info("Check ACK: OK (%s)" % (repr(ack)))
+            return True
+        LOGGER.error("Check ACK: BAD (%s != %s)" % (repr(wait_ack), repr(ack)))
+        raise BadAckException()
 
     @cached_property(ttl=3600)
     def firmware_date(self):
         '''Return the firmware date code'''
-        self.run_cmd("VER", self.OK)
+        self.wake_up()
+        self.send("VER", self.OK)
         data = self.link.read(13)
         return datetime.strptime(data.strip('\n\r'), '%b %d %Y').date()
 
     @cached_property(ttl=3600)
     def firmware_version(self):
         '''Return the firmware version as string'''
-        self.run_cmd("NVER", self.OK)
+        self.wake_up()
+        self.send("NVER", self.OK)
         data = self.link.read()
         return data.strip('\n\r')
 
-    def get_time(self):
+    def gettime(self):
         '''Return the current date on the console.'''
-        self.run_cmd("GETTIME", self.ACK)
-        data = self.link.read(8, is_byte=True)
+        self.wake_up()
+        self.send("GETTIME", self.ACK)
+        data = self.link.read(8)
         return unpack_datetime(data)
 
-    def set_time(self, dtime):
+    def settime(self, dtime):
         '''Set the datetime `dtime` on the console.'''
-        self.run_cmd("SETTIME", self.ACK)
-        self.run_cmd(pack_datetime(dtime), self.ACK, is_byte=True)
+        self.wake_up()
+        self.send("SETTIME", self.ACK)
+        self.send("")
+        self.link.write(pack_datetime(dtime))
+        self.ACK
 
-    time = property(get_time, set_time, "VantagePro2 date on the console")
+    time = property(gettime, settime, "VantagePro2 date on the console")
+
+    def check_revision(self):
+        '''Check firmware date and get data format revision.'''
+         #Rev "A" firmware, dated before April 24, 2002 uses the old format.
+         #Rev "B" firmware dated on or after April 24, 2002
+        date = datetime(2002, 4, 24).date()
+        self.RevA = self.RevB = True
+        if date < self.firmware_date:
+            self.RevB = False
+        else:
+            self.RevA = False
 
     @cached_property(ttl=3600)
     def diagnostics(self):
@@ -133,7 +146,8 @@ class VantagePro2(object):
             - The number of CRC errors detected.
         All values are recorded since midnight, or since the diagnostics are
         cleared manualy.'''
-        self.run_cmd("RXCHECK", self.OK)
+        self.wake_up()
+        self.send("RXCHECK", self.OK)
         data = self.link.read().strip('\n\r').split(' ')
         data = [int(i) for i in data]
         return dict(total_received = data[0], total_missed = data[1],
@@ -142,9 +156,14 @@ class VantagePro2(object):
 
     def get_current_data(self):
         '''Get real-time data.'''
-        self.run_cmd("LOOP 1", self.ACK)
-        data = self.link.read(99, is_byte=True)
-        return LoopDataParserRevB(data)
+        self.wake_up()
+        self.send("LOOP 1", self.ACK)
+        current_data = self.link.read(99)
+        current_time = self.time
+        if self.RevB:
+            return LoopDataParserRevB(current_data, current_time)
+        else:
+            raise NotImplementedError
 
     def get_archives(self, start_date=None, stop_date=None):
         '''Get archive records until `start_date` and `stop_date`.'''
@@ -153,19 +172,20 @@ class VantagePro2(object):
     def get_archives_generator(self, start_date=None, stop_date=None):
         '''Get archive records until `start_date` and `stop_date` with
         generator.'''
+        self.wake_up()
         # 2000-01-01 0:00:01
         # start_date = start_date or datetime(2012, 6, 8, 15, 20, 0)
         start_date = start_date or datetime(2000, 1, 1, 0, 0, 1)
-        self.run_cmd("DMPAFT", self.ACK)
+        self.send("DMPAFT", self.ACK)
         # I think that date_time_crc is incorrect...
-        self.link.write(pack_dmp_date_time(start_date), is_byte=True)
+        self.link.write(pack_dmp_date_time(start_date))
         # timeout must be at least 2 seconds
         timeout = (self.link.timeout or 1) * 2
         ack = self.link.read(len(self.ACK), timeout=timeout)
         if ack != self.ACK:
             raise BadAckException()
         # Read dump header and get number of pages
-        header = DmpHeaderParser(self.link.read(8, is_byte=True))
+        header = DmpHeaderParser(self.link.read(8))
         # Write ACK if crc is good. Else, send cancel.
         if header.crc_error:
             self.link.write(self.CANCEL)
@@ -177,7 +197,7 @@ class VantagePro2(object):
         r_index = 0
         for i in range(header['Pages']):
             # Read one dump page
-            raw_dump = self.link.read(267, is_byte=True)
+            raw_dump = self.link.read(267)
             # Parse dump page
             dump = DmpPageParser(raw_dump)
             LOGGER.info('Dump page no %d ' % dump['Index'])
@@ -188,7 +208,10 @@ class VantagePro2(object):
             # offsets = [(0, 52), (52, 104), ... , (156, 208), (208, 260)]
             for offset in offsets:
                 raw_record = raw_records[offset[0]:offset[1]]
-                record = ArchiveDataParserRevB(raw_record)
+                if self.RevB:
+                    record = ArchiveDataParserRevB(raw_record)
+                else:
+                    raise NotImplementedError
                 # verify that record has valid data, and store
                 r_time = record['Datetime']
                 if r_time is None:
