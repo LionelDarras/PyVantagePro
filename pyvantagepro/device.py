@@ -79,7 +79,7 @@ class VantagePro2(object):
             - The `timeout` allows to reading the ACK with this timeout.'''
         if is_bytes(data):
             LOGGER.info("try send : %s" % byte_to_string(data))
-            self.link.write(data, is_byte=True)
+            self.link.write(data)
         else:
             LOGGER.info("try send : %s" % data)
             self.link.write("%s\n" % data)
@@ -119,9 +119,7 @@ class VantagePro2(object):
         '''Set the datetime `dtime` on the console.'''
         self.wake_up()
         self.send("SETTIME", self.ACK)
-        self.send("")
-        self.link.write(pack_datetime(dtime))
-        self.ACK
+        self.send(pack_datetime(dtime), self.ACK)
 
     time = property(gettime, settime, "VantagePro2 date on the console")
 
@@ -131,7 +129,7 @@ class VantagePro2(object):
          #Rev "B" firmware dated on or after April 24, 2002
         date = datetime(2002, 4, 24).date()
         self.RevA = self.RevB = True
-        if date < self.firmware_date:
+        if self.firmware_date < date:
             self.RevB = False
         else:
             self.RevA = False
