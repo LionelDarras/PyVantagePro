@@ -11,8 +11,8 @@
 """
 
 from __future__ import unicode_literals
-
 import logging
+
 
 def active_logger():
     '''Initialize a speaking logger with stream handler (stderr).'''

@@ -120,6 +120,7 @@ class DataParser(DataDict):
     def __repr__(self):
         return str(self.__unicode__())
 
+
 class LoopDataParserRevB(DataParser):
     '''Parse data returned by the 'LOOP' command. It contains all of the
     real-time data that can be read from the Davis VantagePro2.'''
@@ -141,9 +142,9 @@ class LoopDataParserRevB(DataParser):
         ('SunSet',      'H'),  ('EOL',         '2s'), ('CRC',         'H'),
     )
 
-    def __init__(self, data):
+    def __init__(self, data, dtime):
         super(LoopDataParserRevB, self).__init__(data, self.LOOP_FORMAT)
-        self['Date'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self['Datetime'] = dtime
         self['Barometer'] = self['Barometer'] / 1000
         self['TempIn'] = self['TempIn'] / 10
         self['TempOut'] = self['TempOut'] / 10
