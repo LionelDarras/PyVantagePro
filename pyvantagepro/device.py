@@ -165,7 +165,9 @@ class VantagePro2(object):
 
     def get_archives(self, start_date=None, stop_date=None):
         '''Get archive records until `start_date` and `stop_date`.'''
-        return ListDataDict(self.get_archives_generator(start_date, stop_date))
+        generator = self.get_archives_generator(start_date, stop_date)
+        generator.next()
+        return ListDataDict(generator)
 
     def get_archives_generator(self, start_date=None, stop_date=None):
         '''Get archive records until `start_date` and `stop_date` with
@@ -191,6 +193,8 @@ class VantagePro2(object):
         else:
             self.link.write(self.ACK)
         LOGGER.info('Begin downloading %d dump pages' % header['Pages'])
+        # yield records len
+        yield 5 * header['Pages']
         finish = False
         r_index = 0
         for i in range(header['Pages']):

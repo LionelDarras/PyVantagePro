@@ -65,8 +65,7 @@ setup(
     test_suite='pyvantagepro.tests',
     entry_points={
         'console_scripts': [
-            'vpextract = pyvantagepro.__init__:extract',
-            'vpconfig = pyvantagepro.__init__:config'
+            'pyvantagepro = pyvantagepro.__main__:main'
         ],
     },
 )
