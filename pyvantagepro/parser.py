@@ -16,8 +16,8 @@ from datetime import datetime
 from array import array
 
 from .logger import LOGGER
-from .utils import (cached_property, byte_to_string, DataDict,
-                    bytes_to_binary, bin_to_integer)
+from .utils import (cached_property, byte_to_string, Dict, bytes_to_binary,
+                    bin_to_integer)
 
 
 class VantageProCRC(object):
@@ -83,7 +83,7 @@ class VantageProCRC(object):
             return False
 
 
-class DataParser(DataDict):
+class DataParser(Dict):
     '''Implements a reusable class for working with a binary data structure.
     It provides a named fields interface, similiar to C structures.'''
 
@@ -94,7 +94,7 @@ class DataParser(DataDict):
             self.crc_error = not VantageProCRC(data).check()
         format_t = str("%s%s" % (order, ''.join(format_t)))
         self.struct = struct.Struct(format = format_t)
-
+        # save raw_bytes
         self.raw_bytes = data
         # Unpacks data from `raw_bytes` and returns a dication of named fields
         data = self.struct.unpack_from(self.raw_bytes, 0)

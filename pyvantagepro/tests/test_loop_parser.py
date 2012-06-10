@@ -34,13 +34,13 @@ class TestLoopParser:
         assert VantageProCRC(self.bytes).check()
 
     def test_check_raw_data(self):
-        item = LoopDataParserRevB(self.bytes)
+        item = LoopDataParserRevB(self.bytes, datetime.now())
         assert item.raw.replace(' ', '') == self.data
         assert item.raw_bytes == self.bytes
 
     def test_unpack(self):
         '''Test unpack loop packet.'''
-        item = LoopDataParserRevB(self.bytes)
+        item = LoopDataParserRevB(self.bytes, datetime.now())
 
         assert item['Alarm01HighLeafTemp'] == 0
         assert item['Alarm01HighLeafWet'] == 0

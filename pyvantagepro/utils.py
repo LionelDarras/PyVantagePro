@@ -185,9 +185,9 @@ def dict_to_csv(items, delimiter, header):
         csvwriter = csv.DictWriter(output, fieldnames=items[0].keys(),
                                    delimiter=delimiter)
         if header:
-#            csvwriter.writerow(dict((key,key) for key in items[0].keys()))
+            csvwriter.writerow(dict((key,key) for key in items[0].keys()))
             # writeheader is not supported in python2.6
-             csvwriter.writeheader()
+            # csvwriter.writeheader()
         for item in items:
           csvwriter.writerow(dict(item))
 
@@ -202,19 +202,24 @@ def dict_to_xml(items, root, key_title):
     if len(items) > 0:
         for i, item in enumerate(items):
             if key_title is not None:
-                title = normalize_string(item[key_title])
+                try:
+                    title = normalize_string(item[key_title])
+                except:
+                    title = "%d" % i
             else:
                 title = "%d" % i
             xml = "%s<Data-%s>" % (xml, title)
             for key, value in item.items():
-                    xml = "%s<%s>%s</%s>" % (xml, str(key), str(value), str(key))
+                    key = "%s" % key
+                    value = "%s" % value
+                    xml = "%s<%s>%s</%s>" % (xml, key, value, key)
             xml = "%s</Data-%s>" % (xml, title)
         xml = "<%s>%s</%s>" % (root, xml, root)
         xml = parseString(xml).toprettyxml()
     return xml
 
 
-class DataDict(object):
+class Dict(object):
     '''Implements sorteddict with somes additional methods.'''
     def __init__(self, initial_dict = None):
         initial_dict = initial_dict or {}
@@ -230,7 +235,7 @@ class DataDict(object):
         del self.store[key]
 
     def copy(self):
-        return DataDict(self)
+        return Dict(self)
 
     def keys(self):
         return self.store.keys()
@@ -255,7 +260,7 @@ class DataDict(object):
         unused_keys = set(data.keys()) - set(keys)
         for key in unused_keys:
             del data[key]
-        return DataDict(data)
+        return Dict(data)
 
     def to_xml(self, root="VantagePro", key_title="Datetime"):
         return dict_to_xml([self.store], root, key_title)
@@ -272,13 +277,23 @@ class DataDict(object):
     def __repr__(self):
         return self.store.__repr__()
 
-class ListDataDict(list):
+class ListDict(list):
     def to_xml(self, root="VantagePro", key_title="Datetime"):
         return dict_to_xml(list(self), root, key_title)
 
     def to_csv(self, delimiter=',', header=True):
         return dict_to_csv(list(self), delimiter, header)
 
+    def filter(self, keys):
+        return list(self.filter_generator(keys))
+
+    def filter_generator(self, keys):
+        for item in self:
+            data = item.copy()
+            unused_keys = set(data.keys()) - set(keys)
+            for key in unused_keys:
+                del data[key]
+            yield Dict(data)
 
 def normalize_string(string):
     '''Remove special char in string'''

@@ -15,14 +15,14 @@ from datetime import datetime
 
 from . import LOGGER
 import random
-from ..utils import (cached_property, retry, DataDict, hex_to_byte,
+from ..utils import (cached_property, retry, Dict, hex_to_byte,
                      byte_to_string, bytes_to_binary, hex_to_binary,
                      bin_to_integer)
 
 
-def test_data_dict():
+def test_dict():
     '''Tests DataDict.'''
-    d = DataDict()
+    d = Dict()
     d["f"] = "222"
     d["a"] = "111"
     # sorteddict({'a': '111', 'f': '222'})
