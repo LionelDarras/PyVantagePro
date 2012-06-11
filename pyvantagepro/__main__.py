@@ -29,26 +29,23 @@ stdout = getattr(stdout, 'buffer', stdout)
 def gettime_cmd(args, vp):
     args.output.write("%s\n" % vp.time)
 
-
-def firmware_date_cmd(args, vp):
-    args.output.write("%s\n" % vp.firmware_date)
-
-
-def firmware_version_cmd(args, vp):
-    args.output.write("%s\n" % vp.firmware_version)
+def getinfo_cmd(args, vp):
+    info = "Firmware date : %s\n" % vp.firmware_date
+    info = "%sFirmware version : %s\n" % (info, vp.firmware_version)
+    info = "%sDiagnostics : %s\n" % (info, vp.diagnostics)
+    args.output.write("%s" % info)
 
 
 def getarchives(args, vp):
-    from .utils import ListDataDict
+    from .utils import ListDict
     if args.debug:
         return vp.get_archives(args.start, args.stop)
     from progressbar import ProgressBar, Percentage, Bar, RotatingMarker, FileTransferSpeed, ETA, AnimatedMarker
-    records = ListDataDict()
+    records = ListDict()
     generator = vp.get_archives_generator(args.start, args.stop)
-    n = generator.next()
     widgets = ['Archives download: ', Percentage(), ' ',
                Bar()]
-    pbar = ProgressBar(widgets=widgets, maxval=n).start()
+    pbar = ProgressBar(widgets=widgets, maxval=2600).start()
     for step, record in enumerate(generator):
         pbar.update(step)
         records.append(record)
@@ -66,11 +63,13 @@ def getarchives_cmd(args, vp):
 
 def get_cmd_parser(cmd, subparsers, help, func):
     parser = subparsers.add_parser(cmd, help=help, description=help)
-    parser.add_argument('--debug', action="store_true", default=False,
-                        help='Display log')
     parser.add_argument('--output', action="store", default=stdout,
                         type=argparse.FileType('wb', 0),
                         help='Filename where output is written')
+    parser.add_argument('--timeout', default=1, type=float,
+                        help="Connection link timeout")
+    parser.add_argument('--debug', action="store_true", default=False,
+                        help='Display log')
     parser.add_argument('url', action="store",
                         help="Specifiy URL for connection link. " \
                              "E.g. tcp:localhost:1111 " \
@@ -109,10 +108,11 @@ def main():
                         help='Print the current date on the station.',
                         func=gettime_cmd)
 
-    # firmware_date command
-    subparser = get_cmd_parser('firmware_date', subparsers,
-                        help='Print the firmware date code.',
-                        func=firmware_date_cmd)
+    # getinfo command
+    subparser = get_cmd_parser('getinfo', subparsers,
+                        help='Print VantagePro information.',
+                        func=getinfo_cmd)
+
 
     # getarchives command
     subparser = get_cmd_parser('getarchives', subparsers,
@@ -125,7 +125,7 @@ def main():
     # getdata command
     subparser = get_cmd_parser('getdata', subparsers,
                         help='Extract real-time data from the station.',
-                        func=firmware_version_cmd)
+                        func=getinfo_cmd)
 
     # Parse argv arguments
     args = parser.parse_args()
@@ -139,13 +139,21 @@ def main():
         try:
             link = link_from_url(args.url)
             link.settimeout(args.timeout)
+            link.open()
         except Exception as e:
             parser.error('%s' % e)
     else:
         parser.error('Either sepecify an url link')
 
-    vp = VantagePro2(link)
-    args.func(args, vp)
+    try:
+        vp = VantagePro2(link)
+        args.func(args, vp)
+    except Exception as e:
+        if args.debug:
+            raise e
+        else:
+            print("Error: %s" % e)
+
 
 
 
