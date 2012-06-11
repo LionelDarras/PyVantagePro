@@ -96,8 +96,8 @@ class retry(object):
             for i in range(self.tries):
                 try:
                     ret = f(*args, **kwargs)
-                    if ret == True:
-                        return True
+                    if ret:
+                        return ret
                     elif i == self.tries - 1:
                         return ret
                 except Exception as e:
@@ -294,6 +294,9 @@ class ListDict(list):
             for key in unused_keys:
                 del data[key]
             yield Dict(data)
+
+    def get_sorted_by(self, keyword):
+        return ListDict(sorted(self, key=lambda k: k[keyword]))
 
 def normalize_string(string):
     '''Remove special char in string'''
