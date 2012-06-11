@@ -14,15 +14,16 @@
 '''
 from __future__ import division, unicode_literals
 import time
-from datetime import datetime
+import struct
+from datetime import datetime, timedelta
 
 from .logger import LOGGER
 from .utils import (cached_property, retry, byte_to_string, hex_to_byte,
                     ListDict, is_bytes, is_text)
 
 from .parser import (LoopDataParserRevB, DmpHeaderParser, DmpPageParser,
-                     ArchiveDataParserRevB, pack_datetime, unpack_datetime,
-                     pack_dmp_date_time)
+                     ArchiveDataParserRevB, VantageProCRC, pack_datetime,
+                     unpack_datetime, pack_dmp_date_time)
 
 
 class NoDeviceException(Exception):
@@ -31,14 +32,20 @@ class NoDeviceException(Exception):
 
 
 class BadAckException(Exception):
-    '''The acknowledgement is not the one expected.'''
-    value = __doc__
+    '''No valid acknowledgement.'''
+    def __str__(self):
+       return self.__doc__
 
 
 class BadCRCException(Exception):
-    '''The CRC is not correct.'''
-    value = __doc__
+    '''No valid checksum.'''
+    def __str__(self):
+       return self.__doc__
 
+class BadDataException(Exception):
+    '''No valid data.'''
+    def __str__(self):
+       return self.__doc__
 
 class VantagePro2(object):
     '''A class capable of reading raw (binary) weather data from a
@@ -92,6 +99,26 @@ class VantagePro2(object):
         LOGGER.error("Check ACK: BAD (%s != %s)" % (repr(wait_ack), repr(ack)))
         raise BadAckException()
 
+    @retry(tries=3, delay=0.5)
+    def read_from_eeprom(self, hex_address, size):
+        self.link.write("EEBRD %s %.2d\n" % 	(hex_address, size))
+        ack = self.link.read(len(self.ACK))
+        if self.ACK == ack:
+            LOGGER.info("Check ACK: OK (%s)" % (repr(ack)))
+            data = self.link.read(size + 2) # 2 bytes for CRC
+            if VantageProCRC(data).check():
+                return data
+            else:
+                raise BadCRCException()
+        else:
+            msg = "Check ACK: BAD (%s != %s)" % (repr(wait_ack), repr(ack))
+            LOGGER.error(msg)
+            raise BadAckException()
+
+    @cached_property(ttl=360)
+    def archive_period(self):
+        return struct.unpack(b'B', self.read_from_eeprom("2D", 1)[0])[0]
+
     @cached_property(ttl=3600)
     def firmware_date(self):
         '''Return the firmware date code'''
@@ -105,7 +132,7 @@ class VantagePro2(object):
         '''Return the firmware version as string'''
         self.wake_up()
         self.send("NVER", self.OK)
-        data = self.link.read()
+        data = self.link.read(6)
         return data.strip('\n\r')
 
     def gettime(self):
@@ -166,16 +193,33 @@ class VantagePro2(object):
     def get_archives(self, start_date=None, stop_date=None):
         '''Get archive records until `start_date` and `stop_date`.'''
         generator = self.get_archives_generator(start_date, stop_date)
-        generator.next()
-        return ListDict(generator)
+        # The first value is the
+        return ListDict(list(set(generator))).get_sorted_by("Datetime")
+
+    @retry(tries=3, delay=1)
+    def read_dump_page(self):
+        raw_dump = self.link.read(267)
+        if len(raw_dump) != 267:
+            self.link.write(self.NACK)
+            raise BadDataException()
+        else:
+            dump = DmpPageParser(raw_dump)
+            if dump.crc_error:
+                self.link.write(self.NACK)
+                raise BadCRCException()
+            return dump
 
     def get_archives_generator(self, start_date=None, stop_date=None):
         '''Get archive records until `start_date` and `stop_date` with
         generator.'''
         self.wake_up()
-        # 2000-01-01 0:00:01
-        # start_date = start_date or datetime(2012, 6, 8, 15, 20, 0)
-        start_date = start_date or datetime(2000, 1, 1, 0, 0, 1)
+        # 2001-01-01 01:01:01
+        start_date = start_date or datetime(2001, 1, 1, 1, 1, 1)
+        stop_date = stop_date or datetime.now()
+        # round start_date, with the archive period to the previous record
+        period = self.archive_period
+        minutes = (start_date.minute % period) + period
+        start_date = start_date - timedelta(minutes=minutes)
         self.send("DMPAFT", self.ACK)
         # I think that date_time_crc is incorrect...
         self.link.write(pack_dmp_date_time(start_date))
@@ -185,7 +229,7 @@ class VantagePro2(object):
         if ack != self.ACK:
             raise BadAckException()
         # Read dump header and get number of pages
-        header = DmpHeaderParser(self.link.read(8))
+        header = DmpHeaderParser(self.link.read(6))
         # Write ACK if crc is good. Else, send cancel.
         if header.crc_error:
             self.link.write(self.CANCEL)
@@ -193,15 +237,16 @@ class VantagePro2(object):
         else:
             self.link.write(self.ACK)
         LOGGER.info('Begin downloading %d dump pages' % header['Pages'])
-        # yield records len
-        yield 5 * header['Pages']
         finish = False
         r_index = 0
         for i in range(header['Pages']):
             # Read one dump page
-            raw_dump = self.link.read(267)
-            # Parse dump page
-            dump = DmpPageParser(raw_dump)
+            try:
+                dump = self.read_dump_page()
+            except (BadCRCException, BadDataException) as e:
+                LOGGER.error('Error: %s' % e)
+                finish = True
+                break
             LOGGER.info('Dump page no %d ' % dump['Index'])
             # Get the 5 raw records
             raw_records = dump["Records"]
@@ -220,8 +265,12 @@ class VantagePro2(object):
                     LOGGER.error('Invalid record detected')
                     finish = True
                     break
-                record.crc_error = dump.crc_error
+                if not (start_date <= r_time <= stop_date):
+                    LOGGER.error('The record is not in the datetime range')
+                    finish = True
+                    break
                 LOGGER.info("Record-%.4d - Datetime : %s" % (r_index, r_time))
+                record.crc_error = dump.crc_error
                 yield record
                 r_index += 1
             if finish:
