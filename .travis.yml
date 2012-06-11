@@ -7,8 +7,8 @@ python:
 
 # command to install dependencies
 install:
-  - pip install . --use-mirrors
-  - pip install -r requirements.txt --use-mirrors
+  - rm $VIRTUAL_ENV/lib/*/no-global-site-packages.txt
+  - pip install --use-mirrors .
 
 # command to run tests
 script: py.test
