@@ -193,7 +193,6 @@ class VantagePro2(object):
     def get_archives(self, start_date=None, stop_date=None):
         '''Get archive records until `start_date` and `stop_date`.'''
         generator = self.get_archives_generator(start_date, stop_date)
-        # The first value is the
         return ListDict(list(set(generator))).get_sorted_by("Datetime")
 
     @retry(tries=3, delay=1)

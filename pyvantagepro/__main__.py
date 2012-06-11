@@ -29,6 +29,12 @@ stdout = getattr(stdout, 'buffer', stdout)
 def gettime_cmd(args, vp):
     args.output.write("%s\n" % vp.time)
 
+def settime_cmd(args, vp):
+    old_time = vp.time
+    vp.time = datetime.strptime(args.datetime, "%Y-%m-%d %H:%M")
+    args.output.write("Old value : %s\n" % old_time)
+    args.output.write("New value : %s\n" % vp.time)
+
 def getinfo_cmd(args, vp):
     info = "Firmware date : %s\n" % vp.firmware_date
     info = "%sFirmware version : %s\n" % (info, vp.firmware_version)
@@ -36,15 +42,20 @@ def getinfo_cmd(args, vp):
     args.output.write("%s" % info)
 
 
+def getdata_cmd(args, vp):
+    args.delim = args.delim.decode("string-escape")
+    data = vp.get_current_data().to_csv(delimiter=args.delim)
+    args.output.write("%s" % data)
+
+
 def getarchives(args, vp):
     from .utils import ListDict
     if args.debug:
         return vp.get_archives(args.start, args.stop)
-    from progressbar import ProgressBar, Percentage, Bar, RotatingMarker, FileTransferSpeed, ETA, AnimatedMarker
+    from progressbar import ProgressBar, Percentage, Bar
     records = ListDict()
     generator = vp.get_archives_generator(args.start, args.stop)
-    widgets = ['Archives download: ', Percentage(), ' ',
-               Bar()]
+    widgets = ['Archives download: ', Percentage(), ' ', Bar()]
     pbar = ProgressBar(widgets=widgets, maxval=2600).start()
     for step, record in enumerate(generator):
         pbar.update(step)
@@ -54,11 +65,12 @@ def getarchives(args, vp):
 
 
 def getarchives_cmd(args, vp):
+    args.delim = args.delim.decode("string-escape")
     if args.start is not None:
-        args.start = datetime.strptime(" ".join(args.start), "%Y-%m-%d %H:%M")
+        args.start = datetime.strptime(args.start, "%Y-%m-%d %H:%M")
     if args.stop is not None:
-        args.stop = datetime.strptime(" ".join(args.stop), "%Y-%m-%d %H:%M")
-    args.output.write(getarchives(args, vp).to_csv())
+        args.stop = datetime.strptime(args.stop, "%Y-%m-%d %H:%M")
+    args.output.write(getarchives(args, vp).to_csv(delimiter=args.delim))
 
 
 def get_cmd_parser(cmd, subparsers, help, func):
@@ -79,8 +91,7 @@ def get_cmd_parser(cmd, subparsers, help, func):
 
 
 def add_datetime_argument(parser, name, help):
-    parser.add_argument(name, action="store", default=None, nargs=2,
-            help= "%s Format is like : %s" % (help, NOW))
+    parser.add_argument(name, help= "%s (like : \"%s\")" % (help, NOW))
 
 
 def main():
@@ -92,27 +103,22 @@ def main():
                         version='PyVPDriver version %s' % VERSION,
                         help='Print PyVPDriver’s version number and exit.')
 
-    parser.add_argument('--output', action="store", default=stdout,
-                        type=argparse.FileType('wb', 0),
-                        help='Filename where output is written')
-
-    parser.add_argument('--delim', action="store", default=",",
-                        help='CSV char delimiter')
-
-    parser.add_argument('--timeout', default=1, type=float,
-                        help="Connection link timeout")
-
     subparsers = parser.add_subparsers(title='The pyvantagepro commands')
     # gettime command
     subparser = get_cmd_parser('gettime', subparsers,
                         help='Print the current date on the station.',
                         func=gettime_cmd)
 
+    # settime command
+    subparser = get_cmd_parser('settime', subparsers,
+                        help='Set the datetime argument on the console.',
+                        func=settime_cmd)
+    add_datetime_argument(subparser, 'datetime', 'The chosen datetime value.')
+
     # getinfo command
     subparser = get_cmd_parser('getinfo', subparsers,
                         help='Print VantagePro information.',
                         func=getinfo_cmd)
-
 
     # getarchives command
     subparser = get_cmd_parser('getarchives', subparsers,
@@ -120,20 +126,21 @@ def main():
                         func=getarchives_cmd)
     add_datetime_argument(subparser, '--start', 'Start date.')
     add_datetime_argument(subparser, '--stop', 'Start date.')
-
+    subparser.add_argument('--delim', action="store", default=",",
+                        help='CSV char delimiter')
 
     # getdata command
     subparser = get_cmd_parser('getdata', subparsers,
                         help='Extract real-time data from the station.',
-                        func=getinfo_cmd)
+                        func=getdata_cmd)
+    subparser.add_argument('--delim', action="store", default=",",
+                        help='CSV char delimiter')
 
     # Parse argv arguments
     args = parser.parse_args()
 
     if args.debug:
         LOGGER = active_logger()
-
-    args.delim = args.delim.decode("string-escape")
 
     if args.url:
         try:
@@ -153,8 +160,6 @@ def main():
             raise e
         else:
             print("Error: %s" % e)
-
-
 
 
 if __name__ == '__main__':  # pragma: no cover
