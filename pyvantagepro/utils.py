@@ -176,6 +176,16 @@ def hex_to_byte(hexstr):
     return binascii.unhexlify(hexstr.replace(' ', '').encode('utf-8'))
 
 
+def csv_to_dict(file_input, delimiter=','):
+    '''Deserialize csv to list of dictionaries.'''
+    delimiter = str(delimiter)
+    table = []
+    reader = csv.DictReader(file_input, delimiter=delimiter, skipinitialspace=True)
+    for d in reader:
+        table.append(d)
+    return ListDict(table)
+
+
 def dict_to_csv(items, delimiter, header):
     '''Serialize list of dictionaries to csv.'''
     content = ""
@@ -277,7 +287,9 @@ class Dict(object):
     def __repr__(self):
         return self.store.__repr__()
 
+
 class ListDict(list):
+    '''Implements list of sorteddicts with somes additional methods.'''
     def to_xml(self, root="VantagePro", key_title="Datetime"):
         return dict_to_xml(list(self), root, key_title)
 
@@ -295,8 +307,10 @@ class ListDict(list):
                 del data[key]
             yield Dict(data)
 
-    def get_sorted_by(self, keyword):
-        return ListDict(sorted(self, key=lambda k: k[keyword]))
+    def sorted_by(self, keyword, reverse=False):
+        return ListDict(sorted(self, key=lambda k: k[keyword],
+                                     reverse=reverse))
+
 
 def normalize_string(string):
     '''Remove special char in string'''

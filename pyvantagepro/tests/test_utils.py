@@ -11,13 +11,41 @@
 '''
 
 from __future__ import unicode_literals
+import sys
+import os
 from datetime import datetime
 
 from . import LOGGER
 import random
 from ..utils import (cached_property, retry, Dict, hex_to_byte,
                      byte_to_string, bytes_to_binary, hex_to_binary,
-                     bin_to_integer)
+                     bin_to_integer, csv_to_dict)
+
+if sys.version_info[0] >= 3:
+    # Python 3
+    import io as StringIO
+else:
+    # Python 2
+    import StringIO as StringIO
+
+
+def test_csv_to_dict():
+    '''Tests csv to dict.'''
+    file_input = StringIO.StringIO("a,f\r\n111,222")
+    items = csv_to_dict(file_input)
+    assert items[0]["a"] == "111"
+    assert items[0]["f"] == "222"
+
+
+def test_csv_to_dict_file():
+    '''Tests csv to dict.'''
+    path = os.path.join('pyvantagepro', 'tests', 'ressources', 'archives.csv')
+    path = os.path.abspath(os.path.join('.', path))
+    file_input = open(path, 'rU')
+    items = csv_to_dict(file_input).sorted_by("Datetime", reverse=True)
+    file_input.close()
+    assert items[0]["Barometer"] == "31.838"
+    assert items[0]["Datetime"] == "2012-06-08 16:40:00"
 
 
 def test_dict():
