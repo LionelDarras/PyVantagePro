@@ -19,6 +19,7 @@ from pylink import link_from_url
 from . import VERSION
 from .logger import LOGGER, active_logger
 from .device import VantagePro2
+from utils import csv_to_dict
 
 
 NOW = datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -28,21 +29,21 @@ stdout = getattr(stdout, 'buffer', stdout)
 
 def gettime_cmd(args, vp):
     '''Gettime command.'''
-    args.output.write("%s - %s\n" % (vp.time, vp.timezone))
+    print("%s - %s" % (vp.time, vp.timezone))
 
 def settime_cmd(args, vp):
     '''Settime command.'''
     old_time = vp.time
     vp.time = datetime.strptime(args.datetime, "%Y-%m-%d %H:%M")
-    args.output.write("Old value : %s - %s\n" % old_time, vp.timezone)
-    args.output.write("New value : %s - %s\n" % vp.time, vp.timezone)
+    print("Old value : %s - %s" % (old_time, vp.timezone))
+    print("New value : %s - %s" % (vp.time, vp.timezone))
 
 def getinfo_cmd(args, vp):
     '''Getinfo command.'''
     info = "Firmware date : %s\n" % vp.firmware_date
     info = "%sFirmware version : %s\n" % (info, vp.firmware_version)
     info = "%sDiagnostics : %s\n" % (info, vp.diagnostics)
-    args.output.write("%s" % info)
+    print("%s" % info)
 
 
 def getdata_cmd(args, vp):
@@ -76,15 +77,41 @@ def getarchives_cmd(args, vp):
         args.start = datetime.strptime(args.start, "%Y-%m-%d %H:%M")
     if args.stop is not None:
         args.stop = datetime.strptime(args.stop, "%Y-%m-%d %H:%M")
-    args.output.write(getarchives(args, vp).to_csv(delimiter=args.delim))
+    items = getarchives(args, vp)
+    args.output.write(items.to_csv(delimiter=args.delim))
+    if len(items) == 0:
+        print("No record")
+    else:
+        print("%d records was found" % len(items))
+
+def update_cmd(args, vp):
+    '''Update command.'''
+    # create file if not exist
+    with file(args.db, 'a'):
+        os.utime(args.db, None)
+    file_db = open(args.db, 'r+a')
+    db = csv_to_dict(file_db, delimiter=args.delim)
+    args.start = None
+    args.stop = None
+    if len(db) > 0:
+        db = db.sorted_by("Datetime", reverse=True)
+        start_date = datetime.strptime(db[0]['Datetime'], "%Y-%m-%d %H:%M:%S")
+        args.start = start_date
+        items = getarchives(args, vp)
+        file_db.write(items.to_csv(delimiter=args.delim, header=False))
+    else:
+        items = getarchives(args, vp)
+        file_db.write(items.to_csv(delimiter=args.delim))
+    file_db.close()
+    if len(items) == 0:
+        print("No new record")
+    else:
+        print("%d new records" % len(items))
 
 
 def get_cmd_parser(cmd, subparsers, help, func):
     '''Make a subparser command.'''
     parser = subparsers.add_parser(cmd, help=help, description=help)
-    parser.add_argument('--output', action="store", default=stdout,
-                        type=argparse.FileType('wb', 0),
-                        help='Filename where output is written')
     parser.add_argument('--timeout', default=1, type=float,
                         help="Connection link timeout")
     parser.add_argument('--debug', action="store_true", default=False,
@@ -109,7 +136,7 @@ def main():
     subparsers = parser.add_subparsers(title='The pyvantagepro commands')
     # gettime command
     subparser = get_cmd_parser('gettime', subparsers,
-                        help='Print the current date on the station.',
+                        help='Print the current datetime on the station.',
                         func=gettime_cmd)
 
     # settime command
@@ -131,9 +158,12 @@ def main():
                              'entire contents of the data archive will be '\
                              'downloaded.',
                         func=getarchives_cmd)
-    subparser.add_argument('--start', help="The beging date record. "\
+    subparser.add_argument('--output', action="store", default=stdout,
+                        type=argparse.FileType('w', 0),
+                        help='Filename where output is written')
+    subparser.add_argument('--start', help="The beginning date record. "\
                                       "(like : \"%s\")" % NOW)
-    subparser.add_argument('--stop', help="The stoping date record. "\
+    subparser.add_argument('--stop', help="The stopping date record. "\
                                       "(like : \"%s\")" % NOW)
     subparser.add_argument('--delim', action="store", default=",",
                         help='CSV char delimiter')
@@ -142,16 +172,20 @@ def main():
     subparser = get_cmd_parser('getdata', subparsers,
                         help='Extract real-time data from the station.',
                         func=getdata_cmd)
+    subparser.add_argument('--output', action="store", default=stdout,
+                        type=argparse.FileType('w', 0),
+                        help='Filename where output is written')
     subparser.add_argument('--delim', action="store", default=",",
                         help='CSV char delimiter')
 
     # update command
     subparser = get_cmd_parser('update', subparsers,
                         help='Update csv database records with getting '\
-                             'automaticly new records.',
-                        func=getdata_cmd)
-    subparser.add_argument('db', action="store", type=argparse.FileType('wb', 0),
-                        help='The CSV database')
+                             'automatically new archive records.',
+                        func=update_cmd)
+    subparser.add_argument('--delim', action="store", default=",",
+                        help='CSV char delimiter')
+    subparser.add_argument('db', action="store", help='The CSV database')
 
     # Parse argv arguments
     args = parser.parse_args()
