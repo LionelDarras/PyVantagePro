@@ -225,7 +225,7 @@ class VantagePro2(object):
         stop_date = stop_date or datetime.now()
         # round start_date, with the archive period to the previous record
         period = self.archive_period
-        minutes = (start_date.minute % period) + period
+        minutes = (start_date.minute % period)
         start_date = start_date - timedelta(minutes=minutes)
         self.send("DMPAFT", self.ACK)
         # I think that date_time_crc is incorrect...
@@ -243,7 +243,7 @@ class VantagePro2(object):
             raise BadCRCException()
         else:
             self.link.write(self.ACK)
-        LOGGER.info('Begin downloading %d dump pages' % header['Pages'])
+        LOGGER.info('Starting download %d dump pages' % header['Pages'])
         finish = False
         r_index = 0
         for i in range(header['Pages']):
@@ -272,13 +272,13 @@ class VantagePro2(object):
                     LOGGER.error('Invalid record detected')
                     finish = True
                     break
-                if not (start_date <= r_time <= stop_date):
-                    LOGGER.error('The record is not in the datetime range')
-                    finish = True
-                    break
-                LOGGER.info("Record-%.4d - Datetime : %s" % (r_index, r_time))
-                record.crc_error = dump.crc_error
-                yield record
+                elif r_time <= stop_date:
+                    if start_date < r_time:
+                        msg = "Record-%.4d - Datetime : %s" % (r_index, r_time)
+                        LOGGER.info(msg)
+                        yield record
+                    else:
+                        LOGGER.info('The record is not in the datetime range')
                 r_index += 1
             if finish:
                 LOGGER.info('Canceling download')
