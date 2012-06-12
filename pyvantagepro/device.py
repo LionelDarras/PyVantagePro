@@ -107,17 +107,25 @@ class VantagePro2(object):
             LOGGER.info("Check ACK: OK (%s)" % (repr(ack)))
             data = self.link.read(size + 2) # 2 bytes for CRC
             if VantageProCRC(data).check():
-                return data
+                return data[:-2]
             else:
                 raise BadCRCException()
         else:
-            msg = "Check ACK: BAD (%s != %s)" % (repr(wait_ack), repr(ack))
+            msg = "Check ACK: BAD (%s != %s)" % (repr(self.ACK), repr(ack))
             LOGGER.error(msg)
             raise BadAckException()
 
     @cached_property(ttl=360)
     def archive_period(self):
-        return struct.unpack(b'B', self.read_from_eeprom("2D", 1)[0])[0]
+        return struct.unpack(b'B', self.read_from_eeprom("2D", 1))[0]
+
+    @cached_property(ttl=360)
+    def timezone(self):
+        offset, gmt = struct.unpack(b'HB', self.read_from_eeprom("14", 3))
+        if gmt == 1:
+            return "GMT+%.2f" % offset / 100
+        else:
+            return "Localtime"
 
     @cached_property(ttl=3600)
     def firmware_date(self):
@@ -193,7 +201,7 @@ class VantagePro2(object):
     def get_archives(self, start_date=None, stop_date=None):
         '''Get archive records until `start_date` and `stop_date`.'''
         generator = self.get_archives_generator(start_date, stop_date)
-        return ListDict(list(set(generator))).get_sorted_by("Datetime")
+        return ListDict(list(set(generator))).sorted_by("Datetime")
 
     @retry(tries=3, delay=1)
     def read_dump_page(self):

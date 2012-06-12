@@ -27,15 +27,18 @@ stdout = sys.stdout
 stdout = getattr(stdout, 'buffer', stdout)
 
 def gettime_cmd(args, vp):
-    args.output.write("%s\n" % vp.time)
+    '''Gettime command.'''
+    args.output.write("%s - %s\n" % (vp.time, vp.timezone))
 
 def settime_cmd(args, vp):
+    '''Settime command.'''
     old_time = vp.time
     vp.time = datetime.strptime(args.datetime, "%Y-%m-%d %H:%M")
-    args.output.write("Old value : %s\n" % old_time)
-    args.output.write("New value : %s\n" % vp.time)
+    args.output.write("Old value : %s - %s\n" % old_time, vp.timezone)
+    args.output.write("New value : %s - %s\n" % vp.time, vp.timezone)
 
 def getinfo_cmd(args, vp):
+    '''Getinfo command.'''
     info = "Firmware date : %s\n" % vp.firmware_date
     info = "%sFirmware version : %s\n" % (info, vp.firmware_version)
     info = "%sDiagnostics : %s\n" % (info, vp.diagnostics)
@@ -43,12 +46,14 @@ def getinfo_cmd(args, vp):
 
 
 def getdata_cmd(args, vp):
+    '''Get real-time data command'''
     args.delim = args.delim.decode("string-escape")
     data = vp.get_current_data().to_csv(delimiter=args.delim)
     args.output.write("%s" % data)
 
 
 def getarchives(args, vp):
+    '''Getarchive with progressbar if `args.debug` is True.'''
     from .utils import ListDict
     if args.debug:
         return vp.get_archives(args.start, args.stop)
@@ -65,6 +70,7 @@ def getarchives(args, vp):
 
 
 def getarchives_cmd(args, vp):
+    '''Getarchive command.'''
     args.delim = args.delim.decode("string-escape")
     if args.start is not None:
         args.start = datetime.strptime(args.start, "%Y-%m-%d %H:%M")
@@ -74,6 +80,7 @@ def getarchives_cmd(args, vp):
 
 
 def get_cmd_parser(cmd, subparsers, help, func):
+    '''Make a subparser command.'''
     parser = subparsers.add_parser(cmd, help=help, description=help)
     parser.add_argument('--output', action="store", default=stdout,
                         type=argparse.FileType('wb', 0),
@@ -84,14 +91,10 @@ def get_cmd_parser(cmd, subparsers, help, func):
                         help='Display log')
     parser.add_argument('url', action="store",
                         help="Specifiy URL for connection link. " \
-                             "E.g. tcp:localhost:1111 " \
+                             "E.g. tcp:iphost:port " \
                              "or serial:/dev/ttyUSB0:19200:8N1")
     parser.set_defaults(func=func)
     return parser
-
-
-def add_datetime_argument(parser, name, help):
-    parser.add_argument(name, help= "%s (like : \"%s\")" % (help, NOW))
 
 
 def main():
@@ -111,9 +114,10 @@ def main():
 
     # settime command
     subparser = get_cmd_parser('settime', subparsers,
-                        help='Set the datetime argument on the console.',
+                        help='Set the datetime argument on the station.',
                         func=settime_cmd)
-    add_datetime_argument(subparser, 'datetime', 'The chosen datetime value.')
+    subparser.add_argument('datetime', help='The chosen datetime value. '\
+                                      '(like : "%s")' % NOW)
 
     # getinfo command
     subparser = get_cmd_parser('getinfo', subparsers,
@@ -122,10 +126,15 @@ def main():
 
     # getarchives command
     subparser = get_cmd_parser('getarchives', subparsers,
-                        help='Extract archives data from the station.',
+                        help='Extract archives data from the station between'\
+                             ' `start` date and `stop` date. By default the '\
+                             'entire contents of the data archive will be '\
+                             'downloaded.',
                         func=getarchives_cmd)
-    add_datetime_argument(subparser, '--start', 'Start date.')
-    add_datetime_argument(subparser, '--stop', 'Start date.')
+    subparser.add_argument('--start', help="The beging date record. "\
+                                      "(like : \"%s\")" % NOW)
+    subparser.add_argument('--stop', help="The stoping date record. "\
+                                      "(like : \"%s\")" % NOW)
     subparser.add_argument('--delim', action="store", default=",",
                         help='CSV char delimiter')
 
@@ -135,6 +144,14 @@ def main():
                         func=getdata_cmd)
     subparser.add_argument('--delim', action="store", default=",",
                         help='CSV char delimiter')
+
+    # update command
+    subparser = get_cmd_parser('update', subparsers,
+                        help='Update csv database records with getting '\
+                             'automaticly new records.',
+                        func=getdata_cmd)
+    subparser.add_argument('db', action="store", type=argparse.FileType('wb', 0),
+                        help='The CSV database')
 
     # Parse argv arguments
     args = parser.parse_args()
