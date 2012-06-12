@@ -38,14 +38,24 @@ def test_csv_to_dict():
 
 
 def test_csv_to_dict_file():
-    '''Tests csv to dict.'''
+    '''Tests csv to dict with file archives.'''
     path = os.path.join('pyvantagepro', 'tests', 'ressources', 'archives.csv')
     path = os.path.abspath(os.path.join('.', path))
-    file_input = open(path, 'rU')
+    file_input = open(path, 'r')
     items = csv_to_dict(file_input).sorted_by("Datetime", reverse=True)
     file_input.close()
     assert items[0]["Barometer"] == "31.838"
     assert items[0]["Datetime"] == "2012-06-08 16:40:00"
+
+
+def test_csv_to_dict_empty_file():
+    '''Tests csv to dict with empty file archives.'''
+    path = os.path.join('pyvantagepro', 'tests', 'ressources', 'empty.csv')
+    path = os.path.abspath(os.path.join('.', path))
+    file_input = open(path, 'r')
+    items = csv_to_dict(file_input)
+    file_input.close()
+    assert len(items) == 0
 
 
 def test_dict():
