@@ -7,7 +7,7 @@ Communication driver for VantagePro 2 station.
 Command-line usage
 ==================
 
-PyVantagePro has a command-line script that provides to interact with the station.
+PyVantagePro has a command-line script that provides to interact with the station.::
 
   $ pyvantagepro -h
 
@@ -31,6 +31,7 @@ PyVantagePro has a command-line script that provides to interact with the statio
       getdata             Extract real-time data from the station.
       update              Update csv database records with getting automatically
                           new records.
+
 
 Gettime
 -------
