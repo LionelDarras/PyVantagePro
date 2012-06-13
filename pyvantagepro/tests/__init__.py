@@ -10,7 +10,10 @@
 from __future__ import unicode_literals
 
 # active logging for tests
-from ..logger import LOGGER, active_logger
+from ..logger import active_logger
 
 
-LOGGER = active_logger()
+active_logger()
+
+
+from ..logger import LOGGER

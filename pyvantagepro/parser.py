@@ -58,7 +58,7 @@ class VantageProCRC(object):
     def __init__(self, data):
         self.data = data
 
-    @cached_property()
+    @cached_property
     def checksum(self):
         '''Return CRC calc value from raw serial data.'''
         crc = 0
@@ -66,7 +66,7 @@ class VantageProCRC(object):
             crc = (self.CRC_TABLE[ (crc >> 8) ^ byte ] ^ ((crc & 0xFF) << 8))
         return crc
 
-    @cached_property()
+    @cached_property
     def data_with_checksum(self):
         '''Return packed raw CRC from raw data.'''
         checksum = struct.pack(b'>H', self.checksum)
@@ -100,7 +100,7 @@ class DataParser(Dict):
         data = self.struct.unpack_from(self.raw_bytes, 0)
         super(DataParser, self).__init__(dict(zip(self.fields, data)))
 
-    @cached_property()
+    @cached_property
     def raw(self):
         return byte_to_string(self.raw_bytes)
 

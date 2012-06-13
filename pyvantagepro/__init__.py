@@ -10,7 +10,7 @@
 
 '''
 # Make sure the logger is configured early:
-from .logger import LOGGER, active_logger, silent_logger
+from .logger import LOGGER, active_logger
 from .device import VantagePro2
 
 VERSION = '0.1dev'

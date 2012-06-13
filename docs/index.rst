@@ -1,12 +1,68 @@
 PyVantagePro
 ============
 
+.. image:: https://secure.travis-ci.org/SalemHarrache/PyVantagePro.png?branch=master
+
+.. module:: pyvantagepro
+
+
+PyVantagePro is a python project which aims to make the communication with
+weather stations Davis VantagePro2 easier and funnier...i.e. more pythonic.
+
+The main feature of this project is to get data automatically.
+In order to do so, it uses the basic methods `get_archives() <#pyvantagepro.VantagePro2.get_current_data>`_
+(to get archive data) and `get_current_data() <#pyvantagepro.VantagePro2.get_current_data>`_
+(to get real-time data).
+About configuration, it only uses `gettime() <#pyvantagepro.VantagePro2.gettime>`_
+and `settime() <#pyvantagepro.VantagePro2.settime>`_ because we are assuming
+that stations are already configured.
+
+.. note::
+    PyVantagePro uses the `PyLink <http://pypi.python.org/pypi/PyLink>`_ lib,
+    offers a universal communication interface with File-Like API.
+
+Examples::
+
+    >>> from pyvantagepro import VantagePro2
+    >>> from pylink import TCPLink
+    >>>
+    >>> device = VantagePro2(TCPLink('ip', port))
+    >>> device.gettime()
+    2012-06-13 16:44:56 - Localtime
+
+
+Features
+--------
+
+* Collecting real-time data as a python dictionary
+* Collecting archives as a list of dictionaries
+* Collecting data in a CSV file
+* Updating station time
+* Getting some information about the station, such as date and firmware version.
+* Various types of supported connections
+* Comes with a command-line script
+
+
+Installation
+------------
+
+You can install, upgrade, uninstall PyVantagePro with these commands::
+
+  $ pip install pyvantagepro
+  $ pip install --upgrade pyvantagepro
+  $ pip uninstall pyvantagepro
+
+Or if you don't have pip::
+
+  $ easy_install pyvantagepro
+
+
 Communication tools for the Davis VantagePro2 devices.
 
 Command-line usage
 ------------------
 
-PyVantagePro has a command-line script that provides to interact with the station.::
+PyVantagePro has a command-line script that interacts with the station.::
 
   $ pyvantagepro -h
 
@@ -36,8 +92,8 @@ PyVantagePro has a command-line script that provides to interact with the statio
 Gettime
 ~~~~~~~
 
-The "gettime" command gives, as its name suggests, the current datetime of
-the station. (with the timezone offset)
+The `gettime` command gives, as its name suggests, the current datetime of
+the station (with the timezone offset).
 
 Usage::
 
@@ -52,7 +108,7 @@ Usage::
     --timeout TIMEOUT  Connection link timeout
     --debug            Display log
 
-Exemple::
+Example::
 
   $ pyvantagepro gettime tcp:192.168.0.18:1111
   2012-06-12 15:14:23 - Localtime
@@ -61,7 +117,7 @@ Exemple::
 Settime
 ~~~~~~~
 
-Allows to update the date and time of the station. (No timezone for now)
+Allows us to update the station date and time(no timezone for now).
 
 Usage::
 
@@ -80,7 +136,7 @@ Usage::
     --debug            Display log
 
 
-Exemple::
+Example::
 
   $ pyvantagepro settime tcp:192.168.0.18:1111 "2012-06-12 17:32"
   Old value : 2012-06-12 16:24:15 - Localtime
@@ -90,7 +146,7 @@ Exemple::
 Getinfo
 ~~~~~~~
 
-Gives some information about the station,  such as date and version of firmware.
+Gives some information about the station,  such as date and firmware version.
 
 Usage::
 
@@ -108,7 +164,7 @@ Usage::
     --debug            Display log
 
 
-Exemple::
+Example::
 
   $ pyvantagepro getinfo tcp:192.168.0.18:1111 --timeout 2
   Firmware date : 2009-11-27
@@ -122,7 +178,7 @@ Getarchives
 
 Downloads the archive records from the station between two dates.
 By default all records are downloaded. If no stop date is specified, the
-download will stop at the last record in the station memory.
+download will stop at the last record available in the station memory.
 
 Usage::
 
@@ -140,7 +196,7 @@ Usage::
                        E.g. tcp:iphost:port or serial:/dev/ttyUSB0:19200:8N1
 
   optional arguments:
-    -h, --help         show this help message and exit
+    -h, --help         Show this help message and exit
     --timeout TIMEOUT  Connection link timeout
     --debug            Display log
     --output OUTPUT    Filename where output is written
@@ -149,20 +205,20 @@ Usage::
     --delim DELIM      CSV char delimiter
 
 
-Exemple::
+Example::
 
   $ pyvantagepro getarchives tcp:192.168.0.18:1111 \
     --start "2012-06-12 16:19" --stop "2012-06-12 16:21" \
     --output archive.csv
-  Archives download: 100% |##############################################
+  Archives download: 100% |##############################################|
   1 record was found
 
-if you want to get all records, you can use this command without any specific date
+If you want to get all records, you can use this command without specifying any date
 
 ::
 
   $ pyvantagepro getarchives tcp:192.168.0.18:1111 --output archive.csv
-  Archives download: 100% |##############################################
+  Archives download: 100% |##############################################|
   2145 records were found
 
 
@@ -171,13 +227,13 @@ Update
 
 This command is useful for maintaining a database which is updated regularly
 (e.g. with a crontab). The database is a simple CSV file that contains all
-archive records. You can certainly use 'getarchives' with a specific date range
+archive records. You can use 'getarchives' with a specific date range
 and manually update your data.
 However, the update command automatically analyzes the CSV file, retrieves the
 datetime of the last record, then downloads the data from the station and add
-them to the end of the file.
+it to the end of the file.
 
-Finally we have a csv file with all the data which is updated automatically﻿.
+Finally we have a CSV file with all the data which is updated automatically﻿.
 
 
 Usage::
@@ -185,7 +241,7 @@ Usage::
   pyvantagepro update [-h] [--timeout TIMEOUT] [--debug] [--delim DELIM]
                              url db
 
-  Update csv database records by getting automatically new archive records.
+  Update CSV database records by getting automatically new archive records.
 
   positional arguments:
     url                Specifiy URL for connection link.
@@ -193,19 +249,19 @@ Usage::
     db                 The CSV database
 
   optional arguments:
-    -h, --help         show this help message and exit
+    -h, --help         Show this help message and exit
     --timeout TIMEOUT  Connection link timeout
     --debug            Display log
     --delim DELIM      CSV char delimiter
 
-Exemple:
+Example:
 
 If the file does not exist, it will be created automatically
 
 ﻿::
 
   $ pyvantagepro update tcp:192.168.0.18:1111 ./database.csv --timeout 2
-  Archives download: 100% |##############################################
+  Archives download: 100% |##############################################|
   2145 new records
 
 again...
@@ -234,4 +290,46 @@ You can use debug option if you want to print log and see the flowing data::
   2012-06-12 17:24:45,514 INFO: Check ACK: OK ('\n\rOK\n\r')
   2012-06-12 17:24:45,515 INFO: Read : <41 70 72 20 31 30 20 32 30 30 36 0A 0D>
   2012-06-12 17:24:45,521 INFO: try wake up console
-  2012-06-12 17:24:45,521 INFO: Write : <u'\n'> 
+  2012-06-12 17:24:45,521 INFO: Write : <u'\n'>
+
+
+.. _api:
+
+API reference
+-------------
+
+.. autoclass:: VantagePro2
+    :members: get_archives, get_current_data, gettime, settime, timezone, firmware_date, firmware_version, archive_period, diagnostics
+
+    .. automethod:: wake_up()
+    .. automethod:: send(data, wait_ack=None, timeout=None)
+    .. automethod:: read_from_eeprom(hex_address, size)
+
+
+
+.. autoclass:: pyvantagepro.utils.Dict
+    :members: to_csv, filter
+
+
+
+.. autoclass:: pyvantagepro.utils.ListDict
+    :members: to_csv, filter, sorted_by
+
+
+
+.. autoexception:: pyvantagepro.device.BadAckException
+
+.. autoexception:: pyvantagepro.device.BadCRCException
+
+.. autoexception:: pyvantagepro.device.BadDataException
+
+Changelog
+---------
+
+Version 0.1
+~~~~~~~~~~~
+
+- First properly tagged release.
+- Support VantagePro2 revB only.
+- Parsing binary data into dict and list of dict.
+- Command-line script.

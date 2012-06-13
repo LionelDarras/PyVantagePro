@@ -49,7 +49,10 @@ class BadDataException(Exception):
 
 class VantagePro2(object):
     '''A class capable of reading raw (binary) weather data from a
-    Vantage Pro 2 console.'''
+    Vantage Pro 2 console.
+
+    :param link: a opened link connection.
+    '''
 
     # device reply commands
     WAKE_STR = '\n'
@@ -63,11 +66,11 @@ class VantagePro2(object):
 
     def __init__(self, link):
         self.link = link
-        self.check_revision()
+        self._check_revision()
 
     @retry(tries=3, delay=1)
     def wake_up(self):
-        '''Wakeup the console.'''
+        '''Wakeup the station console.'''
         wait_ack = self.WAKE_ACK
         LOGGER.info("try wake up console")
         self.link.write(self.WAKE_STR)
@@ -80,10 +83,16 @@ class VantagePro2(object):
 
     @retry(tries=3, delay=0.5)
     def send(self, data, wait_ack=None, timeout=None):
-        '''Send data to station.
-            - If `wait_ack` is not None, the function must check that
-              acknowledgement is the one expected.
-            - The `timeout` allows to reading the ACK with this timeout.'''
+        '''Sends data to station.
+
+         :param data: Can be a byte array or an ASCII command. If this is
+            the case for an ascii command, a <LF> will be added.
+
+         :param wait_ack: If `wait_ack` is not None, the function must check
+            that acknowledgement is the one expected.
+
+         :param timeout: Define this timeout when reading ACK from link﻿.
+         '''
         if is_bytes(data):
             LOGGER.info("try send : %s" % byte_to_string(data))
             self.link.write(data)
@@ -101,6 +110,8 @@ class VantagePro2(object):
 
     @retry(tries=3, delay=0.5)
     def read_from_eeprom(self, hex_address, size):
+        '''Reads from EEPROM the `size` number of bytes starting at the
+        `hex_address`. Results are given as hex strings.'''
         self.link.write("EEBRD %s %.2d\n" % 	(hex_address, size))
         ack = self.link.read(len(self.ACK))
         if self.ACK == ack:
@@ -115,19 +126,21 @@ class VantagePro2(object):
             LOGGER.error(msg)
             raise BadAckException()
 
-    @cached_property(ttl=360)
+    @cached_property
     def archive_period(self):
+        '''Returns number of minutes in the archive period.'''
         return struct.unpack(b'B', self.read_from_eeprom("2D", 1))[0]
 
-    @cached_property(ttl=360)
+    @cached_property
     def timezone(self):
+        '''Returns timezone offset as string.'''
         offset, gmt = struct.unpack(b'HB', self.read_from_eeprom("14", 3))
         if gmt == 1:
-            return "GMT+%.2f" % offset / 100
+            return "GMT+%.2f" % (offset / 100)
         else:
             return "Localtime"
 
-    @cached_property(ttl=3600)
+    @cached_property
     def firmware_date(self):
         '''Return the firmware date code'''
         self.wake_up()
@@ -135,30 +148,28 @@ class VantagePro2(object):
         data = self.link.read(13)
         return datetime.strptime(data.strip('\n\r'), '%b %d %Y').date()
 
-    @cached_property(ttl=3600)
+    @cached_property
     def firmware_version(self):
-        '''Return the firmware version as string'''
+        '''Returns the firmware version as string'''
         self.wake_up()
         self.send("NVER", self.OK)
         data = self.link.read(6)
         return data.strip('\n\r')
 
     def gettime(self):
-        '''Return the current date on the console.'''
+        '''Returns the current datetime of the console.'''
         self.wake_up()
         self.send("GETTIME", self.ACK)
         data = self.link.read(8)
         return unpack_datetime(data)
 
     def settime(self, dtime):
-        '''Set the datetime `dtime` on the console.'''
+        '''Set the given `dtime` on the station.'''
         self.wake_up()
         self.send("SETTIME", self.ACK)
         self.send(pack_datetime(dtime), self.ACK)
 
-    time = property(gettime, settime, "VantagePro2 date on the console")
-
-    def check_revision(self):
+    def _check_revision(self):
         '''Check firmware date and get data format revision.'''
          #Rev "A" firmware, dated before April 24, 2002 uses the old format.
          #Rev "B" firmware dated on or after April 24, 2002
@@ -169,16 +180,9 @@ class VantagePro2(object):
         else:
             self.RevA = False
 
-    @cached_property(ttl=3600)
+    @cached_property
     def diagnostics(self):
-        '''Return the Console Diagnostics report :
-            - Total packets received.
-            - Total packets missed.
-            - Number of resynchronizations.
-            - The largest number of packets received in a row.
-            - The number of CRC errors detected.
-        All values are recorded since midnight, or since the diagnostics are
-        cleared manualy.'''
+        '''Return the Console Diagnostics report. (RXCHECK command)'''
         self.wake_up()
         self.send("RXCHECK", self.OK)
         data = self.link.read().strip('\n\r').split(' ')
@@ -188,7 +192,7 @@ class VantagePro2(object):
                     crc_errors = data[4])
 
     def get_current_data(self):
-        '''Get real-time data.'''
+        '''Returns the real-time data as a `Dict`.'''
         self.wake_up()
         self.send("LOOP 1", self.ACK)
         current_data = self.link.read(99)
@@ -199,26 +203,18 @@ class VantagePro2(object):
             raise NotImplementedError
 
     def get_archives(self, start_date=None, stop_date=None):
-        '''Get archive records until `start_date` and `stop_date`.'''
+        '''Get archive records until `start_date` and `stop_date` as
+        ListDict.
+
+        :param start_date: The beginning datetime record.
+
+        :param stop_date: The stopping datetime record.
+        '''
         generator = self.get_archives_generator(start_date, stop_date)
         return ListDict(list(set(generator))).sorted_by("Datetime")
 
-    @retry(tries=3, delay=1)
-    def read_dump_page(self):
-        raw_dump = self.link.read(267)
-        if len(raw_dump) != 267:
-            self.link.write(self.NACK)
-            raise BadDataException()
-        else:
-            dump = DmpPageParser(raw_dump)
-            if dump.crc_error:
-                self.link.write(self.NACK)
-                raise BadCRCException()
-            return dump
-
-    def get_archives_generator(self, start_date=None, stop_date=None):
-        '''Get archive records until `start_date` and `stop_date` with
-        generator.'''
+    def _get_archives_generator(self, start_date=None, stop_date=None):
+        '''Get archive records generator until `start_date` and `stop_date`.'''
         self.wake_up()
         # 2001-01-01 01:01:01
         start_date = start_date or datetime(2001, 1, 1, 1, 1, 1)
@@ -249,7 +245,7 @@ class VantagePro2(object):
         for i in range(header['Pages']):
             # Read one dump page
             try:
-                dump = self.read_dump_page()
+                dump = self._read_dump_page()
             except (BadCRCException, BadDataException) as e:
                 LOGGER.error('Error: %s' % e)
                 finish = True
@@ -289,3 +285,17 @@ class VantagePro2(object):
                     LOGGER.info('Start downloading next page')
                 self.link.write(self.ACK)
         LOGGER.info('Pages Downloading process was finished')
+
+    @retry(tries=3, delay=1)
+    def _read_dump_page(self):
+        '''Read, parse and check a DmpPage.'''
+        raw_dump = self.link.read(267)
+        if len(raw_dump) != 267:
+            self.link.write(self.NACK)
+            raise BadDataException()
+        else:
+            dump = DmpPageParser(raw_dump)
+            if dump.crc_error:
+                self.link.write(self.NACK)
+                raise BadCRCException()
+            return dump

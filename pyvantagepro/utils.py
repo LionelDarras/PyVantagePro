@@ -39,45 +39,58 @@ def is_bytes(data):
 
 
 class cached_property(object):
-    '''A decorator that converts a function into a lazy property evaluated
-    only once within TTL period. The function wrapped is called the first
-    time to retrieve the result and then that calculated result is used
-    the next time you access the value.
+    """A decorator that converts a function into a lazy property.  The
+    function wrapped is called the first time to retrieve the result
+    and then that calculated result is used the next time you access
+    the value::
 
-    The default time-to-live (TTL) is 300 seconds (5 minutes). Set the TTL to
-    zero for the cached value to never expire.
+        class Foo(object):
 
-    To expire a cached property value manually just do::
+            @cached_property
+            def foo(self):
+                # calculate something important here
+                return 42
 
-        del instance._cache[<property name>]
+    The class has to have a `__dict__` in order for this property to
+    work.
 
+    .. versionchanged:: 0.6
+       the `writeable` attribute and parameter was deprecated.  If a
+       cached property is writeable or not has to be documented now.
+       For performance reasons the implementation does not honor the
+       writeable setting and will always make the property writeable.
     Stolen from:
-    http://wiki.python.org/moin/PythonDecoratorLibrary#Cached_Properties
-    '''
-    def __init__(self, ttl=300):
-        self.ttl = ttl
+    https://raw.github.com/mitsuhiko/werkzeug/master/werkzeug/utils.py
+    """
 
-    def __call__(self, fget, doc=None):
-        self.fget = fget
-        self.__doc__ = doc or fget.__doc__
-        self.__name__ = fget.__name__
-        self.__module__ = fget.__module__
-        return self
+    # implementation detail: this property is implemented as non-data
+    # descriptor.  non-data descriptors are only invoked if there is
+    # no entry with the same name in the instance's __dict__.
+    # this allows us to completely get rid of the access function call
+    # overhead.  If one choses to invoke __get__ by hand the property
+    # will still work as expected because the lookup logic is replicated
+    # in __get__ for manual invocation.
 
-    def __get__(self, inst, owner):
-        now = time.time()
-        try:
-            value, last_update = inst._cache[self.__name__]
-            if self.ttl is not None:
-                if self.ttl > 0 and now - last_update > self.ttl:
-                    raise AttributeError
-        except (KeyError, AttributeError):
-            value = self.fget(inst)
-            try:
-                cache = inst._cache
-            except AttributeError:
-                cache = inst._cache = {}
-            cache[self.__name__] = (value, now)
+    def __init__(self, func, name=None, doc=None, writeable=False):
+        if writeable:
+            from warnings import warn
+            warn(DeprecationWarning('the writeable argument to the '
+                                    'cached property is a noop since 0.6 '
+                                    'because the property is writeable '
+                                    'by default for performance reasons'))
+
+        self.__name__ = name or func.__name__
+        self.__module__ = func.__module__
+        self.__doc__ = doc or func.__doc__
+        self.func = func
+
+    def __get__(self, obj, type=None):
+        if obj is None:
+            return self
+        value = obj.__dict__.get(self.__name__)
+        if value is None:
+            value = self.func(obj)
+            obj.__dict__[self.__name__] = value
         return value
 
 
@@ -106,7 +119,9 @@ class retry(object):
                         raise e
                 if self.delay > 0:
                     time.sleep(self.delay)
-
+        wrapped_f.__doc__ = f.__doc__
+        wrapped_f.__name__ = f.__name__
+        wrapped_f.__module__ = f.__module__
         return wrapped_f
 
 
@@ -206,31 +221,8 @@ def dict_to_csv(items, delimiter, header):
     return content
 
 
-def dict_to_xml(items, root, key_title):
-    '''Serialize a list of dictionaries to XML.'''
-    xml = ''
-    if len(items) > 0:
-        for i, item in enumerate(items):
-            if key_title is not None:
-                try:
-                    title = normalize_string(item[key_title])
-                except:
-                    title = "%d" % i
-            else:
-                title = "%d" % i
-            xml = "%s<Data-%s>" % (xml, title)
-            for key, value in item.items():
-                    key = "%s" % key
-                    value = "%s" % value
-                    xml = "%s<%s>%s</%s>" % (xml, key, value, key)
-            xml = "%s</Data-%s>" % (xml, title)
-        xml = "<%s>%s</%s>" % (root, xml, root)
-        xml = parseString(xml).toprettyxml()
-    return xml
-
-
 class Dict(object):
-    '''Implements sorteddict with somes additional methods.'''
+    '''A sorted dict with somes additional methods.'''
     def __init__(self, initial_dict = None):
         initial_dict = initial_dict or {}
         self.store = sorteddict(initial_dict)
@@ -272,10 +264,8 @@ class Dict(object):
             del data[key]
         return Dict(data)
 
-    def to_xml(self, root="VantagePro", key_title="Datetime"):
-        return dict_to_xml([self.store], root, key_title)
-
     def to_csv(self, delimiter=',', header=True):
+        '''Serialize list of dictionaries to csv.'''
         return dict_to_csv([self.store], delimiter, header)
 
     def __unicode__(self):
@@ -289,42 +279,22 @@ class Dict(object):
 
 
 class ListDict(list):
-    '''Implements list of sorteddicts with somes additional methods.'''
-    def to_xml(self, root="VantagePro", key_title="Datetime"):
-        return dict_to_xml(list(self), root, key_title)
+    '''List of sorteddicts with somes additional methods.'''
 
     def to_csv(self, delimiter=',', header=True):
+        '''Serialize list of dictionaries to csv.'''
         return dict_to_csv(list(self), delimiter, header)
 
     def filter(self, keys):
-        return list(self.filter_generator(keys))
-
-    def filter_generator(self, keys):
+        items = ListDict()
         for item in self:
             data = item.copy()
             unused_keys = set(data.keys()) - set(keys)
             for key in unused_keys:
                 del data[key]
-            yield Dict(data)
+            items.append(data)
+        return ListDict()
 
     def sorted_by(self, keyword, reverse=False):
         return ListDict(sorted(self, key=lambda k: k[keyword],
                                      reverse=reverse))
-
-
-def normalize_string(string):
-    '''Remove special char in string'''
-    import unicodedata
-    string = "%s" % string
-    string = string.replace('\'', '-')
-    string = string.replace(':', '-')
-    string = unicodedata.normalize('NFKD', string)
-    string = string.replace(' ','_').lower()
-    final_string = string
-    for char in string:
-        if not unicodedata.category(char) in ['Nd','Ll','Pd','Pc']:
-            final_string = final_string.replace(char,'')
-    final_string = final_string.lower().replace('_','-')
-    while final_string.find('--') != -1:
-        final_string = final_string.replace('--','-')
-    return final_string

@@ -14,11 +14,20 @@ from __future__ import unicode_literals
 import logging
 
 
+LOGGER = logging.getLogger('pyvpdriver')
+try:
+    from logging import NullHandler
+except ImportError:
+    class NullHandler(logging.Handler):
+        def emit(self, record):
+            pass
+LOGGER.addHandler(NullHandler())
+
 def active_logger():
     '''Initialize a speaking logger with stream handler (stderr).'''
-    logger = logging.getLogger('pyvpdriver')
+    LOGGER = logging.getLogger('pyvpdriver')
 
-    logger.setLevel(logging.INFO)
+    LOGGER.setLevel(logging.INFO)
     logging.getLogger('pylink').setLevel(logging.INFO)
 
     # Default to logging to stderr.
@@ -26,21 +35,5 @@ def active_logger():
     stream_handler = logging.StreamHandler()
     stream_handler.setFormatter(formatter)
 
-    logger.addHandler(stream_handler)
-    logging.getLogger('pylink').addHandler(stream_handler)
-
-    return logger
-
-def silent_logger():
-    '''Initialize a silent logger.'''
-    logger = logging.getLogger('pyvpdriver')
-    try:
-        from logging import NullHandler
-    except ImportError:
-        class NullHandler(logging.Handler):
-            def emit(self, record):
-                pass
-    logger.addHandler(NullHandler())
-    return logger
-
-LOGGER = silent_logger()
+    LOGGER.addHandler(stream_handler)
+    logging.getLogger('pylink').addHandler(stream_handler)	

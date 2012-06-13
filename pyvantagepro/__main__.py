@@ -30,15 +30,15 @@ stdout = getattr(stdout, 'buffer', stdout)
 
 def gettime_cmd(args, vp):
     '''Gettime command.'''
-    print("%s - %s" % (vp.time, vp.timezone))
+    print("%s - %s" % (vp.gettime(), vp.timezone))
 
 
 def settime_cmd(args, vp):
     '''Settime command.'''
-    old_time = vp.time
-    vp.time = datetime.strptime(args.datetime, "%Y-%m-%d %H:%M")
+    old_time = vp.gettime()
+    vp.settime(datetime.strptime(args.datetime, "%Y-%m-%d %H:%M"))
     print("Old value : %s - %s" % (old_time, vp.timezone))
-    print("New value : %s - %s" % (vp.time, vp.timezone))
+    print("New value : %s - %s" % (vp.gettime(), vp.timezone))
 
 
 def getinfo_cmd(args, vp):
@@ -63,7 +63,7 @@ def getarchives(args, vp):
         return vp.get_archives(args.start, args.stop)
     from progressbar import ProgressBar, Percentage, Bar
     records = ListDict()
-    generator = vp.get_archives_generator(args.start, args.stop)
+    generator = vp._get_archives_generator(args.start, args.stop)
     widgets = ['Archives download: ', Percentage(), ' ', Bar()]
     pbar = ProgressBar(widgets=widgets, maxval=2600).start()
     for step, record in enumerate(generator):
@@ -156,16 +156,16 @@ def main():
     # getarchives command
     subparser = get_cmd_parser('getarchives', subparsers,
                         help='Extract archives data from the station between'\
-                             ' start datetime and stop datetime.
-                             'By default the entire contents of the data '
+                             ' start datetime and stop datetime.' \
+                             'By default the entire contents of the data ' \
                              'archive will be downloaded.',
                         func=getarchives_cmd)
     subparser.add_argument('--output', action="store", default=stdout,
                         type=argparse.FileType('w', 0),
                         help='Filename where output is written')
-    subparser.add_argument('--start', help="The beginning date record. "\
+    subparser.add_argument('--start', help="The beginning datetime record. "\
                                       "(like : \"%s\")" % NOW)
-    subparser.add_argument('--stop', help="The stopping date record. "\
+    subparser.add_argument('--stop', help="The stopping datetime record. "\
                                       "(like : \"%s\")" % NOW)
     subparser.add_argument('--delim', action="store", default=",",
                         help='CSV char delimiter')
@@ -182,7 +182,7 @@ def main():
 
     # update command
     subparser = get_cmd_parser('update', subparsers,
-                        help='Update csv database records with getting '\
+                        help='Update CSV database records with getting '\
                              'automatically new archive records.',
                         func=update_cmd)
     subparser.add_argument('--delim', action="store", default=",",
@@ -193,7 +193,7 @@ def main():
     args = parser.parse_args()
 
     if args.debug:
-        LOGGER = active_logger()
+        active_logger()
 
     if args.url:
         try:
@@ -205,14 +205,17 @@ def main():
     else:
         parser.error('Either sepecify an url link')
 
-    try:
-        vp = VantagePro2(link)
-        args.func(args, vp)
-    except Exception as e:
-        if args.debug:
-            raise e
-        else:
-            print("Error: %s" % e)
+    vp = VantagePro2(link)
+    args.func(args, vp)
+
+#    try:
+#        vp = VantagePro2(link)
+#        args.func(args, vp)
+#    except Exception as e:
+#        if args.debug:
+#            raise e
+#        else:
+#            print("Error: %s" % e)
 
 
 if __name__ == '__main__':  # pragma: no cover

@@ -76,16 +76,12 @@ def test_dict():
     assert "f" not in d.filter(['a', 'b'])
     new_d = d.filter(['a', 'f'])
     assert "a,f\r\n111,222\r\n" == new_d.to_csv()
-    xml = new_d.to_xml().replace("\t", "").replace('\n', '').replace(' ', '')
-    assert xml == '<?xmlversion="1.0"?><VantagePro>'\
-                  '<Data-0><a>111</a><f>222</f></Data-0>'\
-                  '</VantagePro>'
 
 
 class TestCachedProperty:
     ''' Tests cached_property decorator.'''
 
-    @cached_property()
+    @cached_property
     def random_bool(self):
         '''Returns random bool'''
         return bool(random.getrandbits(1))
@@ -145,9 +141,3 @@ def test_bin_integer():
     assert bin_to_integer(hexstr, 0, 1) == 0
     assert bin_to_integer(hexstr, 0, 2) == 2
     assert bin_to_integer(hexstr, 0, 3) == 6
-
-def test_normalize_string():
-    from ..utils import normalize_string
-    assert normalize_string("éç") == "ec"
-    d = datetime(2012,10,10,10,10,10)
-    assert normalize_string(d) == "2012-10-10-10-10-10"
