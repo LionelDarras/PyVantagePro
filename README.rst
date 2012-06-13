@@ -153,7 +153,9 @@ Exemple::
   Archives download: 100% |#####################################################|
   1 record was found
 
-if you want to get all records, you can use this command without any specific date::
+if you want to get all records, you can use this command without any specific date
+
+::
 
   $ pyvantagepro getarchives tcp:192.168.0.18:1111 --output archive.csv
   Archives download: 100% |#####################################################|
@@ -192,9 +194,11 @@ Usage::
     --debug            Display log
     --delim DELIM      CSV char delimiter
 
-Exemple
+Exemple:
 
-If the file does not exist, it will be created automatically﻿::
+If the file does not exist, it will be created automatically
+
+﻿::
 
   $ pyvantagepro update tcp:192.168.0.18:1111 ./database.csv --timeout 2
   Archives download: 100% |#####################################################|
