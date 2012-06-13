@@ -202,7 +202,6 @@ If the file does not exist, it will be created automatically﻿::
 
 again...::
 
-
 $ pyvantagepro update tcp:192.168.0.18:1111 ./database.csv --timeout 2
 Archives download: 100% |#####################################################|
 No new records were found﻿
