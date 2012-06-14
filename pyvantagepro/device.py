@@ -157,7 +157,7 @@ class VantagePro2(object):
 
         :param stop_date: The stopping datetime record.
         '''
-        generator = self.get_archives_generator(start_date, stop_date)
+        generator = self._get_archives_generator(start_date, stop_date)
         return ListDict(list(set(generator))).sorted_by("Datetime")
 
     def _get_archives_generator(self, start_date=None, stop_date=None):
@@ -223,6 +223,10 @@ class VantagePro2(object):
                         yield record
                     else:
                         LOGGER.info('The record is not in the datetime range')
+                else:
+                    LOGGER.error('Invalid record detected')
+                    finish = True
+                    break
                 r_index += 1
             if finish:
                 LOGGER.info('Canceling download')

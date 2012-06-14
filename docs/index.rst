@@ -330,9 +330,10 @@ API reference
 Feedback & Contribute
 ---------------------
 
-Your feedback is more than welcome. Write email to
-Lionel.Darras@obs.ujf-grenoble.fr and Salem.Harrache@gmail.com or post
-bugs and feature `requests on github`_.
+Your feedback is more than welcome. Write email to the
+`PyVantagePro mailing list`_.
+
+.. _`PyVantagePro mailing list`: pyvantagepro@librelist.com
 
 There are several ways to contribute to the project:
 
