@@ -5,17 +5,20 @@ PyVantagePro
 
 .. module:: pyvantagepro
 
-
 PyVantagePro is a python project which aims to make the communication with
 weather stations Davis VantagePro2 easier and funnier...i.e. more pythonic.
 
-The main feature of this project is to get data automatically.
-In order to do so, it uses the basic methods `get_archives() <#pyvantagepro.VantagePro2.get_current_data>`_
-(to get archive data) and `get_current_data() <#pyvantagepro.VantagePro2.get_current_data>`_
-(to get real-time data).
-About configuration, it only uses `gettime() <#pyvantagepro.VantagePro2.gettime>`_
-and `settime() <#pyvantagepro.VantagePro2.settime>`_ because we are assuming
-that stations are already configured.
+The main feature of this project is to get data automatically. In order to do
+so, it uses the basic methods `get_archives()`_ (to get archive data) and
+`get_current_data()`_ (to get real-time data).
+
+About configuration, it only uses `gettime()`_ and `settime()`_ because we
+are assuming that stations are already configured.
+
+.. _`get_archives()`: #pyvantagepro.VantagePro2.get_archives
+.. _`get_current_data()`: #pyvantagepro.VantagePro2.get_current_data
+.. _`gettime()`: #pyvantagepro.VantagePro2.gettime
+.. _`settime()`: #pyvantagepro.VantagePro2.settime
 
 .. note::
     PyVantagePro uses the `PyLink <http://pypi.python.org/pypi/PyLink>`_ lib,
@@ -24,11 +27,18 @@ that stations are already configured.
 Examples::
 
     >>> from pyvantagepro import VantagePro2
-    >>> from pylink import TCPLink
     >>>
-    >>> device = VantagePro2(TCPLink('ip', port))
+    >>> device = VantagePro2('tcp:host-ip:port')
     >>> device.gettime()
-    2012-06-13 16:44:56 - Localtime
+    2012-06-13 16:44:56
+    >>> data = device.get_current_data()
+    >>> data['TempIn']
+    87.1
+    >>> data.raw
+    4C 4F 4F ... 0D E6 3B
+    >>> data.filter(('TempIn', 'TempOut', 'SunRise', 'SunSet')).to_csv()
+    SunRise,SunSet,TempIn,TempOut
+    03:50,19:25,87.3,71.5
 
 
 Features
@@ -39,7 +49,7 @@ Features
 * Collecting data in a CSV file
 * Updating station time
 * Getting some information about the station, such as date and firmware version.
-* Various types of supported connections
+* Various types of connections are supported
 * Comes with a command-line script
 
 
@@ -56,8 +66,8 @@ Or if you don't have pip::
 
   $ easy_install pyvantagepro
 
-
-Communication tools for the Davis VantagePro2 devices.
+Or you can get the `source code from github
+<https://github.com/SalemHarrache/PyVantagePro>`_.
 
 Command-line usage
 ------------------
@@ -256,9 +266,7 @@ Usage::
 
 Example:
 
-If the file does not exist, it will be created automatically
-
-﻿::
+If the file does not exist, it will be created automatically::
 
   $ pyvantagepro update tcp:192.168.0.18:1111 ./database.csv --timeout 2
   Archives download: 100% |##############################################|
@@ -322,6 +330,26 @@ API reference
 .. autoexception:: pyvantagepro.device.BadCRCException
 
 .. autoexception:: pyvantagepro.device.BadDataException
+
+
+Feedback & Contribute
+---------------------
+
+Your feedback is more than welcome. Write email to
+Lionel.Darras@obs.ujf-grenoble.fr and Salem.Harrache@gmail.com or post
+bugs and feature `requests on github`_.
+
+.. _`requests on github`: https://github.com/SalemHarrache/PyVantagePro/issues
+
+There are several ways to contribute to the project:
+
+#. Check for open issues or open a fresh issue to start a discussion around a feature idea or a bug. There is a Contributor Friendly tag for issues that should be ideal for people who are not very familiar with the codebase yet.
+#. Fork `the repository`_ on Github to start making your changes to the **develop** branch (or branch off of it).
+#. Write a test which shows that the bug was fixed or that the feature works as expected.
+#. Send a pull request and bug the maintainer until it gets merged and published. :) Make sure to add yourself to AUTHORS_.
+
+.. _`the repository`: http://github.com/kennethreitz/requests
+.. _AUTHORS: https://github.com/kennethreitz/requests/blob/develop/AUTHORS.rst
 
 Changelog
 ---------
