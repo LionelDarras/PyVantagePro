@@ -9,10 +9,9 @@
     :license: GNU GPL v3.
 
 """
-
-import sys
 import os
 from setuptools import setup, find_packages
+from pyvantagepro.compat import is_py27, is_py3
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -30,7 +29,7 @@ REQUIREMENTS = [
     'progressbar>=2.3',
 ]
 
-if sys.version_info < (2, 7) or (3,) <= sys.version_info < (3, 2):
+if not (is_py27 or is_py3):
     # In the stdlib from 2.7:
     REQUIREMENTS.append('argparse')
 

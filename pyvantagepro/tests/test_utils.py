@@ -13,7 +13,6 @@
 from __future__ import unicode_literals
 import os
 import random
-from datetime import datetime
 
 from ..utils import (cached_property, retry, Dict, hex_to_bytes,
                      bytes_to_hex, bytes_to_binary, hex_to_binary,

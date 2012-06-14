@@ -9,7 +9,6 @@
     :license: GNU GPL v3.
 
 """
-
 from __future__ import unicode_literals
 import logging
 from .compat import NullHandler
