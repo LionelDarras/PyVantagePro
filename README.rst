@@ -1,6 +1,8 @@
 PyVantagePro
 ============
 
+.. image:: https://secure.travis-ci.org/SalemHarrache/PyVantagePro.png?branch=master
+
 Communication tools for the Davis VantagePro2 devices.
 
 PyVantagePro is a python project which aims to make the communication with

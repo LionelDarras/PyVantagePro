@@ -223,7 +223,8 @@ Example::
   Archives download: 100% |##############################################|
   1 record was found
 
-If you want to get all records, you can use this command without specifying any date
+If you want to get all records, you can use this command without specifying
+any date
 
 ::
 
@@ -313,17 +314,11 @@ API reference
     .. automethod:: send(data, wait_ack=None, timeout=None)
     .. automethod:: read_from_eeprom(hex_address, size)
 
-
-
 .. autoclass:: pyvantagepro.utils.Dict
     :members: to_csv, filter
 
-
-
 .. autoclass:: pyvantagepro.utils.ListDict
     :members: to_csv, filter, sorted_by
-
-
 
 .. autoexception:: pyvantagepro.device.BadAckException
 
@@ -339,17 +334,17 @@ Your feedback is more than welcome. Write email to
 Lionel.Darras@obs.ujf-grenoble.fr and Salem.Harrache@gmail.com or post
 bugs and feature `requests on github`_.
 
-.. _`requests on github`: https://github.com/SalemHarrache/PyVantagePro/issues
-
 There are several ways to contribute to the project:
 
-#. Check for open issues or open a fresh issue to start a discussion around a feature idea or a bug. There is a Contributor Friendly tag for issues that should be ideal for people who are not very familiar with the codebase yet.
-#. Fork `the repository`_ on Github to start making your changes to the **develop** branch (or branch off of it).
+#. Post bugs and feature `requests on github`_.
+#. Fork `the repository`_ on Github to start making your changes.
 #. Write a test which shows that the bug was fixed or that the feature works as expected.
 #. Send a pull request and bug the maintainer until it gets merged and published. :) Make sure to add yourself to AUTHORS_.
 
-.. _`the repository`: http://github.com/kennethreitz/requests
-.. _AUTHORS: https://github.com/kennethreitz/requests/blob/develop/AUTHORS.rst
+.. _`requests on github`: https://github.com/SalemHarrache/PyVantagePro/issues
+.. _`the repository`: https://github.com/SalemHarrache/PyVantagePro
+.. _AUTHORS: https://github.com/SalemHarrache/PyVantagePro/blob/master/AUTHORS
+
 
 Changelog
 ---------

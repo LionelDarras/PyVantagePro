@@ -14,5 +14,7 @@ Patches and Suggestions
 Original authors
 ````````````````
 
-- VantagePro2 class is inspired from PyWeather projet 
+- This project is based on `PyWeather project`_
   by Patrick C. McGinty <pyweather@tuxcoder.com>
+
+.. _`PyWeather project`: https://github.com/cmcginty/PyWeather/
