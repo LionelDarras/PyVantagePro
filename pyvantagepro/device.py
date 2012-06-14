@@ -5,21 +5,18 @@
 
     Allows data query of Davis Vantage Pro2 devices
 
-    This part of code is inspired by PyWeather projet
-    by Patrick C. McGinty <pyweather@tuxcoder.com>
-
     :copyright: Copyright 2012 Salem Harrache and contributors, see AUTHORS.
     :license: GNU GPL v3.
 
 '''
 from __future__ import division, unicode_literals
-import time
 import struct
 from datetime import datetime, timedelta
+from pylink import link_from_url
 
 from .logger import LOGGER
-from .utils import (cached_property, retry, byte_to_string, hex_to_byte,
-                    ListDict, is_bytes, is_text)
+from .utils import (cached_property, retry, bytes_to_hex,
+                    ListDict, is_bytes)
 
 from .parser import (LoopDataParserRevB, DmpHeaderParser, DmpPageParser,
                      ArchiveDataParserRevB, VantageProCRC, pack_datetime,
@@ -34,24 +31,26 @@ class NoDeviceException(Exception):
 class BadAckException(Exception):
     '''No valid acknowledgement.'''
     def __str__(self):
-       return self.__doc__
+        return self.__doc__
 
 
 class BadCRCException(Exception):
     '''No valid checksum.'''
     def __str__(self):
-       return self.__doc__
+        return self.__doc__
+
 
 class BadDataException(Exception):
     '''No valid data.'''
     def __str__(self):
-       return self.__doc__
+        return self.__doc__
+
 
 class VantagePro2(object):
-    '''A class capable of reading raw (binary) weather data from a
-    Vantage Pro 2 console.
+    '''Communicates with the station by sending commands, reads the binary
+    data and parsing it into usable scalar values.
 
-    :param link: a opened link connection.
+    :param url: A `PyLink` connection URL.
     '''
 
     # device reply commands
@@ -64,8 +63,9 @@ class VantagePro2(object):
     ESC = '\x1b'
     OK = '\n\rOK\n\r'
 
-    def __init__(self, link):
-        self.link = link
+    def __init__(self, url):
+        self.link = link_from_url(url)
+        self.link.open()
         self._check_revision()
 
     @retry(tries=3, delay=1)
@@ -94,7 +94,7 @@ class VantagePro2(object):
          :param timeout: Define this timeout when reading ACK from link﻿.
          '''
         if is_bytes(data):
-            LOGGER.info("try send : %s" % byte_to_string(data))
+            LOGGER.info("try send : %s" % bytes_to_hex(data))
             self.link.write(data)
         else:
             LOGGER.info("try send : %s" % data)
@@ -112,11 +112,11 @@ class VantagePro2(object):
     def read_from_eeprom(self, hex_address, size):
         '''Reads from EEPROM the `size` number of bytes starting at the
         `hex_address`. Results are given as hex strings.'''
-        self.link.write("EEBRD %s %.2d\n" % 	(hex_address, size))
+        self.link.write("EEBRD %s %.2d\n" % (hex_address, size))
         ack = self.link.read(len(self.ACK))
         if self.ACK == ack:
             LOGGER.info("Check ACK: OK (%s)" % (repr(ack)))
-            data = self.link.read(size + 2) # 2 bytes for CRC
+            data = self.link.read(size + 2)  # 2 bytes for CRC
             if VantageProCRC(data).check():
                 return data[:-2]
             else:
@@ -125,36 +125,6 @@ class VantagePro2(object):
             msg = "Check ACK: BAD (%s != %s)" % (repr(self.ACK), repr(ack))
             LOGGER.error(msg)
             raise BadAckException()
-
-    @cached_property
-    def archive_period(self):
-        '''Returns number of minutes in the archive period.'''
-        return struct.unpack(b'B', self.read_from_eeprom("2D", 1))[0]
-
-    @cached_property
-    def timezone(self):
-        '''Returns timezone offset as string.'''
-        offset, gmt = struct.unpack(b'HB', self.read_from_eeprom("14", 3))
-        if gmt == 1:
-            return "GMT+%.2f" % (offset / 100)
-        else:
-            return "Localtime"
-
-    @cached_property
-    def firmware_date(self):
-        '''Return the firmware date code'''
-        self.wake_up()
-        self.send("VER", self.OK)
-        data = self.link.read(13)
-        return datetime.strptime(data.strip('\n\r'), '%b %d %Y').date()
-
-    @cached_property
-    def firmware_version(self):
-        '''Returns the firmware version as string'''
-        self.wake_up()
-        self.send("NVER", self.OK)
-        data = self.link.read(6)
-        return data.strip('\n\r')
 
     def gettime(self):
         '''Returns the current datetime of the console.'''
@@ -169,38 +139,15 @@ class VantagePro2(object):
         self.send("SETTIME", self.ACK)
         self.send(pack_datetime(dtime), self.ACK)
 
-    def _check_revision(self):
-        '''Check firmware date and get data format revision.'''
-         #Rev "A" firmware, dated before April 24, 2002 uses the old format.
-         #Rev "B" firmware dated on or after April 24, 2002
-        date = datetime(2002, 4, 24).date()
-        self.RevA = self.RevB = True
-        if self.firmware_date < date:
-            self.RevB = False
-        else:
-            self.RevA = False
-
-    @cached_property
-    def diagnostics(self):
-        '''Return the Console Diagnostics report. (RXCHECK command)'''
-        self.wake_up()
-        self.send("RXCHECK", self.OK)
-        data = self.link.read().strip('\n\r').split(' ')
-        data = [int(i) for i in data]
-        return dict(total_received = data[0], total_missed = data[1],
-                    resyn = data[2], max_received = data[3],
-                    crc_errors = data[4])
-
     def get_current_data(self):
         '''Returns the real-time data as a `Dict`.'''
         self.wake_up()
         self.send("LOOP 1", self.ACK)
         current_data = self.link.read(99)
-        current_time = self.time
         if self.RevB:
-            return LoopDataParserRevB(current_data, current_time)
+            return LoopDataParserRevB(current_data, datetime.now())
         else:
-            raise NotImplementedError
+            raise NotImplementedError('Do not support RevB data format')
 
     def get_archives(self, start_date=None, stop_date=None):
         '''Get archive records until `start_date` and `stop_date` as
@@ -261,7 +208,8 @@ class VantagePro2(object):
                 if self.RevB:
                     record = ArchiveDataParserRevB(raw_record)
                 else:
-                    raise NotImplementedError
+                    msg = 'Do not support RevA data format'
+                    raise NotImplementedError(msg)
                 # verify that record has valid data, and store
                 r_time = record['Datetime']
                 if r_time is None:
@@ -286,6 +234,48 @@ class VantagePro2(object):
                 self.link.write(self.ACK)
         LOGGER.info('Pages Downloading process was finished')
 
+    @cached_property
+    def archive_period(self):
+        '''Returns number of minutes in the archive period.'''
+        return struct.unpack(b'B', self.read_from_eeprom("2D", 1))[0]
+
+    @cached_property
+    def timezone(self):
+        '''Returns timezone offset as string.'''
+        offset, gmt = struct.unpack(b'HB', self.read_from_eeprom("14", 3))
+
+        if gmt == 1:
+            return "GMT+%.2f" % (offset / 100)
+        else:
+            return "Localtime"
+
+    @cached_property
+    def firmware_date(self):
+        '''Return the firmware date code'''
+        self.wake_up()
+        self.send("VER", self.OK)
+        data = self.link.read(13)
+        return datetime.strptime(data.strip('\n\r'), '%b %d %Y').date()
+
+    @cached_property
+    def firmware_version(self):
+        '''Returns the firmware version as string'''
+        self.wake_up()
+        self.send("NVER", self.OK)
+        data = self.link.read(6)
+        return data.strip('\n\r')
+
+    @cached_property
+    def diagnostics(self):
+        '''Return the Console Diagnostics report. (RXCHECK command)'''
+        self.wake_up()
+        self.send("RXCHECK", self.OK)
+        data = self.link.read().strip('\n\r').split(' ')
+        data = [int(i) for i in data]
+        return dict(total_received=data[0], total_missed=data[1],
+                    resyn=data[2], max_received=data[3],
+                    crc_errors=data[4])
+
     @retry(tries=3, delay=1)
     def _read_dump_page(self):
         '''Read, parse and check a DmpPage.'''
@@ -299,3 +289,14 @@ class VantagePro2(object):
                 self.link.write(self.NACK)
                 raise BadCRCException()
             return dump
+
+    def _check_revision(self):
+        '''Check firmware date and get data format revision.'''
+         #Rev "A" firmware, dated before April 24, 2002 uses the old format.
+         #Rev "B" firmware dated on or after April 24, 2002
+        date = datetime(2002, 4, 24).date()
+        self.RevA = self.RevB = True
+        if self.firmware_date < date:
+            self.RevB = False
+        else:
+            self.RevA = False

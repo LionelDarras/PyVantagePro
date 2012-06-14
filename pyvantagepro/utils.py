@@ -1,4 +1,4 @@
-# coding: utf8
+# -*- coding: utf-8 -*-
 '''
     pyvantagepro.utils
     ------------------
@@ -9,33 +9,22 @@
 '''
 from __future__ import unicode_literals
 import sys
-import os
 import time
 import csv
 import binascii
-import struct
 from blist import sorteddict
-from xml.dom.minidom import parseString
 
-# Type compatibilite between python3 and python2
-if sys.version_info[0] >= 3:
-    # Python 3
-    import io as StringIO
-    text_type = str
-    byte_type = bytes
-else:
-    # Python 2
-    text_type = unicode
-    byte_type = str
-    import cStringIO as StringIO
+from .compat import to_char, str, bytes, StringIO, is_py3
 
 
 def is_text(data):
-    return isinstance(data, text_type)
+    '''Check if data is text instance'''
+    return isinstance(data, str)
 
 
 def is_bytes(data):
-    return isinstance(data, byte_type)
+    '''Check if data is bytes instance'''
+    return isinstance(data, bytes)
 
 
 class cached_property(object):
@@ -53,23 +42,9 @@ class cached_property(object):
 
     The class has to have a `__dict__` in order for this property to
     work.
-
-    .. versionchanged:: 0.6
-       the `writeable` attribute and parameter was deprecated.  If a
-       cached property is writeable or not has to be documented now.
-       For performance reasons the implementation does not honor the
-       writeable setting and will always make the property writeable.
     Stolen from:
     https://raw.github.com/mitsuhiko/werkzeug/master/werkzeug/utils.py
     """
-
-    # implementation detail: this property is implemented as non-data
-    # descriptor.  non-data descriptors are only invoked if there is
-    # no entry with the same name in the instance's __dict__.
-    # this allows us to completely get rid of the access function call
-    # overhead.  If one choses to invoke __get__ by hand the property
-    # will still work as expected because the lookup logic is replicated
-    # in __get__ for manual invocation.
 
     def __init__(self, func, name=None, doc=None, writeable=False):
         if writeable:
@@ -95,7 +70,7 @@ class cached_property(object):
 
 
 class retry(object):
-    '''Retries a function or method until it returns True.
+    '''Retries a function or method until it returns True value.
     delay sets the initial delay in seconds, and backoff sets the factor by
     which the delay should lengthen after each failure.
     Tries must be at least 0, and delay greater than 0.'''
@@ -125,8 +100,8 @@ class retry(object):
         return wrapped_f
 
 
-def byte_to_string(byte):
-    '''Convert a byte string to it's hex string representation.'''
+def bytes_to_hex(byte):
+    '''Convert a bytearray to it's hex string representation.'''
     if sys.version_info[0] >= 3:
         hexstr = str(binascii.hexlify(byte), "utf-8")
     else:
@@ -135,6 +110,11 @@ def byte_to_string(byte):
     for i in range(0, len(hexstr), 2):
         data.append("%s" % hexstr[i:i + 2].upper())
     return ' '.join(data)
+
+
+def hex_to_bytes(hexstr):
+    '''Convert a string hex byte values into a byte string.'''
+    return binascii.unhexlify(hexstr.replace(' ', '').encode('utf-8'))
 
 
 def byte_to_binary(byte):
@@ -146,20 +126,20 @@ def byte_to_binary(byte):
     return ''.join(str((byte & (1 << i)) and 1) for i in reversed(range(8)))
 
 
-def bytes_to_binary(list_bytes):
+def bytes_to_binary(values):
     '''Convert bytes to binary string representation.
     E.g.
     >>> hex_to_binary_string(b"\x4A\xFF")
     '0100101011111111'
     '''
-    if sys.version_info[0] >= 3:
+    if is_py3:
         # TODO: Python 3 convert \x00 to integer 0 ?
-        if list_bytes == 0:
+        if values == 0:
             data = '00000000'
         else:
-            data = ''.join([byte_to_binary(b) for b in list_bytes])
+            data = ''.join([byte_to_binary(b) for b in values])
     else:
-        data = ''.join(byte_to_binary(ord(b)) for b in list_bytes)
+        data = ''.join(byte_to_binary(ord(b)) for b in values)
     return data
 
 
@@ -169,33 +149,30 @@ def hex_to_binary(hexstr):
     >>> hex_to_binary_string("FF")
     '11111111'
     '''
-    if sys.version_info[0] >= 3:
-        return ''.join(byte_to_binary(b) for b in hex_to_byte(hexstr))
-    return ''.join(byte_to_binary(ord(b)) for b in hex_to_byte(hexstr))
+    if is_py3:
+        return ''.join(byte_to_binary(b) for b in hex_to_bytes(hexstr))
+    return ''.join(byte_to_binary(ord(b)) for b in hex_to_bytes(hexstr))
 
-def bin_to_integer(buf, start=0, stop=None):
+
+def binary_to_int(buf, start=0, stop=None):
     '''Convert binary string representation to integer.
     E.g.
-    >>> bin_to_integer('1111110')
+    >>> binary_to_int('1111110')
     126
-    >>> bin_to_integer('1111110', 0, 2)
+    >>> binary_to_int('1111110', 0, 2)
     2
-    >>> bin_to_integer('1111110', 0, 3)
+    >>> binary_to_int('1111110', 0, 3)
     6
     '''
     return int(buf[::-1][start:(stop or len(buf))][::-1], 2)
 
 
-def hex_to_byte(hexstr):
-    '''Convert a string hex byte values into a byte string.'''
-    return binascii.unhexlify(hexstr.replace(' ', '').encode('utf-8'))
-
-
 def csv_to_dict(file_input, delimiter=','):
     '''Deserialize csv to list of dictionaries.'''
-    delimiter = str(delimiter)
+    delimiter = to_char(delimiter)
     table = []
-    reader = csv.DictReader(file_input, delimiter=delimiter, skipinitialspace=True)
+    reader = csv.DictReader(file_input, delimiter=delimiter,
+                            skipinitialspace=True)
     for d in reader:
         table.append(d)
     return ListDict(table)
@@ -205,16 +182,16 @@ def dict_to_csv(items, delimiter, header):
     '''Serialize list of dictionaries to csv.'''
     content = ""
     if len(items) > 0:
-        delimiter = str(delimiter)
-        output = StringIO.StringIO()
+        delimiter = to_char(delimiter)
+        output = StringIO()
         csvwriter = csv.DictWriter(output, fieldnames=items[0].keys(),
                                    delimiter=delimiter)
         if header:
-            csvwriter.writerow(dict((key,key) for key in items[0].keys()))
+            csvwriter.writerow(dict((key, key) for key in items[0].keys()))
             # writeheader is not supported in python2.6
             # csvwriter.writeheader()
         for item in items:
-          csvwriter.writerow(dict(item))
+            csvwriter.writerow(dict(item))
 
         content = output.getvalue()
         output.close()
@@ -223,7 +200,7 @@ def dict_to_csv(items, delimiter, header):
 
 class Dict(object):
     '''A sorted dict with somes additional methods.'''
-    def __init__(self, initial_dict = None):
+    def __init__(self, initial_dict=None):
         initial_dict = initial_dict or {}
         self.store = sorteddict(initial_dict)
 
@@ -258,6 +235,12 @@ class Dict(object):
         return len(self.store)
 
     def filter(self, keys):
+        '''Create a dict with only the following `keys`.
+
+        >>> mydict = Dict({"name":"foo", "firstname":"bar", "age":1})
+        >>> mydict.filter(['age', 'name'])
+        sorteddict({'age': 1, 'name': 'foo'})
+        '''
         data = self.store.copy()
         unused_keys = set(data.keys()) - set(keys)
         for key in unused_keys:
@@ -267,9 +250,6 @@ class Dict(object):
     def to_csv(self, delimiter=',', header=True):
         '''Serialize list of dictionaries to csv.'''
         return dict_to_csv([self.store], delimiter, header)
-
-    def __unicode__(self):
-        return "%s" % self.store
 
     def __str__(self):
         return "%s" % self.store.__str__()
@@ -286,6 +266,13 @@ class ListDict(list):
         return dict_to_csv(list(self), delimiter, header)
 
     def filter(self, keys):
+        '''Create a list of dictionaries with only the following `keys`.
+
+        >>> mylist = ListDict([{"name":"foo", "age":31},
+        ...                    {"name":"bar", "age":24}])
+        >>> mylist.filter(['name'])
+        [{'name': 'foo'}, {'name': 'bar'}]
+        '''
         items = ListDict()
         for item in self:
             data = item.copy()
@@ -293,8 +280,9 @@ class ListDict(list):
             for key in unused_keys:
                 del data[key]
             items.append(data)
-        return ListDict()
+        return items
 
     def sorted_by(self, keyword, reverse=False):
+        '''Returns list sorted by `keyword`.'''
         return ListDict(sorted(self, key=lambda k: k[keyword],
                                      reverse=reverse))

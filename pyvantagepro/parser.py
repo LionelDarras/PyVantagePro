@@ -16,8 +16,8 @@ from datetime import datetime
 from array import array
 
 from .logger import LOGGER
-from .utils import (cached_property, byte_to_string, Dict, bytes_to_binary,
-                    bin_to_integer)
+from .utils import (cached_property, bytes_to_hex, Dict, bytes_to_binary,
+                    binary_to_int)
 
 
 class VantageProCRC(object):
@@ -63,7 +63,7 @@ class VantageProCRC(object):
         '''Return CRC calc value from raw serial data.'''
         crc = 0
         for byte in array(str('B'), self.data):
-            crc = (self.CRC_TABLE[ (crc >> 8) ^ byte ] ^ ((crc & 0xFF) << 8))
+            crc = (self.CRC_TABLE[((crc >> 8) ^ byte)] ^ ((crc & 0xFF) << 8))
         return crc
 
     @cached_property
@@ -93,7 +93,7 @@ class DataParser(Dict):
         if "CRC" in self.fields:
             self.crc_error = not VantageProCRC(data).check()
         format_t = str("%s%s" % (order, ''.join(format_t)))
-        self.struct = struct.Struct(format = format_t)
+        self.struct = struct.Struct(format=format_t)
         # save raw_bytes
         self.raw_bytes = data
         # Unpacks data from `raw_bytes` and returns a dication of named fields
@@ -102,12 +102,12 @@ class DataParser(Dict):
 
     @cached_property
     def raw(self):
-        return byte_to_string(self.raw_bytes)
+        return bytes_to_hex(self.raw_bytes)
 
     def tuple_to_dict(self, key):
         '''Convert {key<->tuple} to {key1<->value2, key2<->value2 ... }.'''
         for i, value in enumerate(self[key]):
-            self["%s%.2d" % (key, i+1)] = value
+            self["%s%.2d" % (key, i + 1)] = value
         del self[key]
 
     def __unicode__(self):
@@ -126,20 +126,20 @@ class LoopDataParserRevB(DataParser):
     real-time data that can be read from the Davis VantagePro2.'''
     # Loop data format (RevB)
     LOOP_FORMAT = (
-        ('LOO',         '3s'), ('BarTrend',    'B'),  ('PacketType',  'B'),
-        ('NextRec',      'H'), ('Barometer',   'H'),  ('TempIn',      'H'),
-        ('HumIn',        'B'), ('TempOut',     'H'),  ('WindSpeed',   'B'),
-        ('WindSpeed10Min','B'),('WindDir',     'H'),  ('ExtraTemps',  '7s'),
-        ('SoilTemps',   '4s'), ('LeafTemps',  '4s'),  ('HumOut',      'B'),
-        ('HumExtra',    '7s'), ('RainRate',    'H'),  ('UV',          'B'),
-        ('SolarRad',     'H'), ('RainStorm',   'H'),  ('StormStartDate','H'),
-        ('RainDay',      'H'), ('RainMonth',   'H'),  ('RainYear',    'H'),
-        ('ETDay',        'H'), ('ETMonth',     'H'),  ('ETYear',      'H'),
-        ('SoilMoist',   '4s'), ('LeafWetness','4s'),  ('AlarmIn',     'B'),
-        ('AlarmRain',    'B'), ('AlarmOut' ,  '2s'),  ('AlarmExTempHum','8s'),
-        ('AlarmSoilLeaf','4s'),('BatteryStatus','B'), ('BatteryVolts','H'),
-        ('ForecastIcon','B'),  ('ForecastRuleNo','B'),('SunRise',     'H'),
-        ('SunSet',      'H'),  ('EOL',         '2s'), ('CRC',         'H'),
+        ('LOO', '3s'), ('BarTrend', 'B'), ('PacketType', 'B'),
+        ('NextRec', 'H'), ('Barometer', 'H'), ('TempIn', 'H'),
+        ('HumIn', 'B'), ('TempOut', 'H'), ('WindSpeed', 'B'),
+        ('WindSpeed10Min', 'B'), ('WindDir', 'H'), ('ExtraTemps', '7s'),
+        ('SoilTemps', '4s'), ('LeafTemps', '4s'), ('HumOut', 'B'),
+        ('HumExtra', '7s'), ('RainRate', 'H'), ('UV', 'B'),
+        ('SolarRad', 'H'), ('RainStorm', 'H'), ('StormStartDate', 'H'),
+        ('RainDay', 'H'), ('RainMonth', 'H'), ('RainYear', 'H'),
+        ('ETDay', 'H'), ('ETMonth', 'H'), ('ETYear', 'H'),
+        ('SoilMoist', '4s'), ('LeafWetness', '4s'), ('AlarmIn', 'B'),
+        ('AlarmRain', 'B'), ('AlarmOut', '2s'), ('AlarmExTempHum', '8s'),
+        ('AlarmSoilLeaf', '4s'), ('BatteryStatus', 'B'), ('BatteryVolts', 'H'),
+        ('ForecastIcon', 'B'), ('ForecastRuleNo', 'B'), ('SunRise', 'H'),
+        ('SunSet', 'H'), ('EOL', '2s'), ('CRC', 'H'),
     )
 
     def __init__(self, data, dtime):
@@ -166,10 +166,10 @@ class LoopDataParserRevB(DataParser):
         self['SunRise'] = self.unpack_time(self['SunRise'])
         self['SunSet'] = self.unpack_time(self['SunSet'])
         # convert to int
-        self['HumExtra']    = struct.unpack(b'7B', self['HumExtra'])
-        self['ExtraTemps']  = struct.unpack(b'7B', self['ExtraTemps'])
-        self['SoilMoist']   = struct.unpack(b'4B', self['SoilMoist'])
-        self['SoilTemps']   = struct.unpack(b'4B', self['SoilTemps'])
+        self['HumExtra'] = struct.unpack(b'7B', self['HumExtra'])
+        self['ExtraTemps'] = struct.unpack(b'7B', self['ExtraTemps'])
+        self['SoilMoist'] = struct.unpack(b'4B', self['SoilMoist'])
+        self['SoilTemps'] = struct.unpack(b'4B', self['SoilTemps'])
         self['LeafWetness'] = struct.unpack(b'4B', self['LeafWetness'])
         self['LeafTemps'] = struct.unpack(b'4B', self['LeafTemps'])
 
@@ -210,7 +210,7 @@ class LoopDataParserRevB(DataParser):
         del self['AlarmOut']
         # AlarmExTempHum bits extraction, only 3 bits are used, but 7 bytes
         for i in range(1, 8):
-            data = self.raw_bytes[74+i]
+            data = self.raw_bytes[74 + i]
             self['AlarmExTempHum'] = bytes_to_binary(data)
             self['AlarmEx%.2dLowTemp' % i] = int(self['AlarmExTempHum'][0])
             self['AlarmEx%.2dHighTemp' % i] = int(self['AlarmExTempHum'][1])
@@ -219,7 +219,7 @@ class LoopDataParserRevB(DataParser):
         del self['AlarmExTempHum']
         # AlarmSoilLeaf 8bits, 4 bytes
         for i in range(1, 5):
-            data = self.raw_bytes[81+i]
+            data = self.raw_bytes[81 + i]
             self['AlarmSoilLeaf'] = bytes_to_binary(data)
             self['Alarm%.2dLowLeafWet' % i] = int(self['AlarmSoilLeaf'][0])
             self['Alarm%.2dHighLeafWet' % i] = int(self['AlarmSoilLeaf'][0])
@@ -247,15 +247,15 @@ class LoopDataParserRevB(DataParser):
     def unpack_storm_date(self):
         '''Given a packed storm date field, unpack and return date.'''
         date = bytes_to_binary(self.raw_bytes[48:50])
-        year = bin_to_integer(date, 0, 7) + 2000
-        day = bin_to_integer(date, 7, 12)
-        month = bin_to_integer(date, 12, 16)
+        year = binary_to_int(date, 0, 7) + 2000
+        day = binary_to_int(date, 7, 12)
+        month = binary_to_int(date, 12, 16)
         return "%s-%s-%s" % (year, month, day)
 
     def unpack_time(self, time):
         '''Given a packed time field, unpack and return "HH:MM" string.'''
         # format: HHMM, and space padded on the left.ex: "601" is 6:01 AM
-        return "%02d:%02d" % divmod(time,100)  # covert to "06:01"
+        return "%02d:%02d" % divmod(time, 100)  # covert to "06:01"
 
 
 class ArchiveDataParserRevB(DataParser):
@@ -263,16 +263,16 @@ class ArchiveDataParserRevB(DataParser):
     real-time data that can be read from the Davis VantagePro2.'''
 
     ARCHIVE_FORMAT = (
-        ('DateStamp',   'H'),  ('TimeStamp',   'H'),  ('TempOut',     'H'),
-        ('TempOutHi',   'H'),  ('TempOutLow',  'H'),  ('RainRate',    'H'),
-        ('RainRateHi',  'H'),  ('Barometer',    'H'), ('SolarRad',    'H'),
-        ('WindSamps',   'H'),  ('TempIn',      'H'),  ('HumIn',       'B'),
-        ('HumOut',      'B'),  ('WindAvg',     'B'),  ('WindHi',      'B'),
-        ('WindHiDir',   'B'),  ('WindAvgDir',  'B'),  ('UV',          'B'),
-        ('ETHour',      'B'),  ('SolarRadHi',  'H'),  ('UVHi',        'B'),
-        ('ForecastRuleNo','B'),('LeafTemps',  '2s'),  ('LeafWetness','2s'),
-        ('SoilTemps',  '4s'),  ('RecType',     'B'),  ('ExtraHum',   '2s'),
-        ('ExtraTemps', '3s'),  ('SoilMoist',  '4s'),
+        ('DateStamp',      'H'), ('TimeStamp',   'H'), ('TempOut',      'H'),
+        ('TempOutHi',      'H'), ('TempOutLow',  'H'), ('RainRate',     'H'),
+        ('RainRateHi',     'H'), ('Barometer',   'H'), ('SolarRad',     'H'),
+        ('WindSamps',      'H'), ('TempIn',      'H'), ('HumIn',        'B'),
+        ('HumOut',         'B'), ('WindAvg',     'B'), ('WindHi',       'B'),
+        ('WindHiDir',      'B'), ('WindAvgDir',  'B'), ('UV',           'B'),
+        ('ETHour',         'B'), ('SolarRadHi',  'H'), ('UVHi',         'B'),
+        ('ForecastRuleNo', 'B'), ('LeafTemps',  '2s'), ('LeafWetness', '2s'),
+        ('SoilTemps',     '4s'), ('RecType',     'B'), ('ExtraHum',    '2s'),
+        ('ExtraTemps',    '3s'), ('SoilMoist',  '4s'),
     )
 
     def __init__(self, data):
@@ -292,14 +292,14 @@ class ArchiveDataParserRevB(DataParser):
         self['WindHiDir'] = int(self['WindHiDir'] * 22.5)
         self['WindHiDir'] = int(self['WindAvgDir'] * 22.5)
         self['SoilTemps'] = tuple(
-                t-90 for t in struct.unpack(b'4B', self['SoilTemps']))
+                (t - 90) for t in struct.unpack(b'4B', self['SoilTemps']))
         self['ExtraHum'] = struct.unpack(b'2B', self['ExtraHum'])
         self['SoilMoist'] = struct.unpack(b'4B', self['SoilMoist'])
-        self['LeafTemps']   = tuple(
-                t-90 for t in struct.unpack(b'2B', self['LeafTemps']))
+        self['LeafTemps'] = tuple(
+                (t - 90) for t in struct.unpack(b'2B', self['LeafTemps']))
         self['LeafWetness'] = struct.unpack(b'2B', self['LeafWetness'])
         self['ExtraTemps'] = tuple(
-                t-90 for t in struct.unpack(b'3B', self['ExtraTemps']))
+                (t - 90) for t in struct.unpack(b'3B', self['ExtraTemps']))
         self.tuple_to_dict("SoilTemps")
         self.tuple_to_dict("LeafTemps")
         self.tuple_to_dict("ExtraTemps")
@@ -335,14 +335,13 @@ def pack_dmp_date_time(d):
     return VantageProCRC(data).data_with_checksum
 
 
-def unpack_dmp_date_time(date, time, crc=None):
+def unpack_dmp_date_time(date, time):
     '''Unpack `date` and `time` to datetime'''
-#    print ("Recv datestamp : %s %s" % (date, time))
     if date != 0xffff and time != 0xffff:
-        day   = date & 0x1f                     # 5 bits
-        month = (date >> 5) & 0x0f              # 4 bits
-        year  = ((date >> 9) & 0x7f) + 2000     # 7 bits
-        hour, min_  = divmod(time,100)
+        day = date & 0x1f                     # 5 bits
+        month = (date >> 5) & 0x0f            # 4 bits
+        year = ((date >> 9) & 0x7f) + 2000   # 7 bits
+        hour, min_ = divmod(time, 100)
         return datetime(year, month, day, hour, min_)
 
 
@@ -353,8 +352,9 @@ def pack_datetime(dtime):
                                        dtime.month, dtime.year - 1900)
     return VantageProCRC(data).data_with_checksum
 
+
 def unpack_datetime(data):
     '''Return unpacked datetime `data` and check CRC.'''
     VantageProCRC(data).check()
     s, m, h, day, month, year = struct.unpack(b'>BBBBBB', data[:6])
-    return datetime(year+1900, month, day, h, m, s)
+    return datetime(year + 1900, month, day, h, m, s)

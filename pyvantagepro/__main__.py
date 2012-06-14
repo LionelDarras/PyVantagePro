@@ -9,23 +9,20 @@
     :license: GNU GPL v3.
 
 '''
-import sys, os
+import os
 import argparse
 
 from datetime import datetime
-from pylink import link_from_url
 
 # Make sure the logger is configured early:
 from . import VERSION
-from .logger import LOGGER, active_logger
+from .logger import active_logger
 from .device import VantagePro2
-from utils import csv_to_dict
+from .utils import csv_to_dict
+from .compat import stdout
 
 
 NOW = datetime.now().strftime("%Y-%m-%d %H:%M")
-# stdout.buffer on Py3, stdout on Py2
-stdout = sys.stdout
-stdout = getattr(stdout, 'buffer', stdout)
 
 
 def gettime_cmd(args, vp):
@@ -70,13 +67,12 @@ def getarchives(args, vp):
         pbar.update(step)
         records.append(record)
     pbar.finish()
-    new_records_len == len(records)
-    if new_records_len == 0:
+    if not records:
         print("No new records were found﻿")
-    elif new_records_len == 1:
+    elif len(records) == 1:
         print("1 new record was found")
     else:
-        print("%d new records were found" % new_records_len)
+        print("%d new records were found" % len(records))
     return records
 
 
@@ -119,8 +115,8 @@ def get_cmd_parser(cmd, subparsers, help, func):
     parser.add_argument('--debug', action="store_true", default=False,
                         help='Display log')
     parser.add_argument('url', action="store",
-                        help="Specifiy URL for connection link. " \
-                             "E.g. tcp:iphost:port " \
+                        help="Specifiy URL for connection link. "
+                             "E.g. tcp:iphost:port "
                              "or serial:/dev/ttyUSB0:19200:8N1")
     parser.set_defaults(func=func)
     return parser
@@ -145,8 +141,8 @@ def main():
     subparser = get_cmd_parser('settime', subparsers,
                         help='Set the given datetime argument on the station.',
                         func=settime_cmd)
-    subparser.add_argument('datetime', help='The chosen datetime value. '\
-                                      '(like : "%s")' % NOW)
+    subparser.add_argument('datetime', help='The chosen datetime value. '
+                                            '(like : "%s")' % NOW)
 
     # getinfo command
     subparser = get_cmd_parser('getinfo', subparsers,
@@ -155,17 +151,17 @@ def main():
 
     # getarchives command
     subparser = get_cmd_parser('getarchives', subparsers,
-                        help='Extract archives data from the station between'\
-                             ' start datetime and stop datetime.' \
-                             'By default the entire contents of the data ' \
+                        help='Extract archives data from the station between'
+                             ' start datetime and stop datetime.'
+                             'By default the entire contents of the data '
                              'archive will be downloaded.',
                         func=getarchives_cmd)
     subparser.add_argument('--output', action="store", default=stdout,
                         type=argparse.FileType('w', 0),
                         help='Filename where output is written')
-    subparser.add_argument('--start', help="The beginning datetime record. "\
+    subparser.add_argument('--start', help="The beginning datetime record. "
                                       "(like : \"%s\")" % NOW)
-    subparser.add_argument('--stop', help="The stopping datetime record. "\
+    subparser.add_argument('--stop', help="The stopping datetime record. "
                                       "(like : \"%s\")" % NOW)
     subparser.add_argument('--delim', action="store", default=",",
                         help='CSV char delimiter')
@@ -182,7 +178,7 @@ def main():
 
     # update command
     subparser = get_cmd_parser('update', subparsers,
-                        help='Update CSV database records with getting '\
+                        help='Update CSV database records with getting '
                              'automatically new archive records.',
                         func=update_cmd)
     subparser.add_argument('--delim', action="store", default=",",
@@ -194,29 +190,17 @@ def main():
 
     if args.debug:
         active_logger()
-
-    if args.url:
+        vp = VantagePro2(args.url)
+        vp.link.settimeout(args.timeout)
+        args.func(args, vp)
+    else:
         try:
-            link = link_from_url(args.url)
-            link.settimeout(args.timeout)
-            link.open()
+            vp = VantagePro2(args.url)
+            vp.link.settimeout(args.timeout)
+            args.func(args, vp)
         except Exception as e:
             parser.error('%s' % e)
-    else:
-        parser.error('Either sepecify an url link')
-
-    vp = VantagePro2(link)
-    args.func(args, vp)
-
-#    try:
-#        vp = VantagePro2(link)
-#        args.func(args, vp)
-#    except Exception as e:
-#        if args.debug:
-#            raise e
-#        else:
-#            print("Error: %s" % e)
 
 
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == '__main__':
     main()

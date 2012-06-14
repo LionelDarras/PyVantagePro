@@ -11,27 +11,27 @@
 '''
 
 from __future__ import unicode_literals
-import sys
 import os
+import random
 from datetime import datetime
 
-from . import LOGGER
-import random
-from ..utils import (cached_property, retry, Dict, hex_to_byte,
-                     byte_to_string, bytes_to_binary, hex_to_binary,
-                     bin_to_integer, csv_to_dict)
+from ..utils import (cached_property, retry, Dict, hex_to_bytes,
+                     bytes_to_hex, bytes_to_binary, hex_to_binary,
+                     binary_to_int, csv_to_dict, is_text, is_bytes)
+from ..compat import StringIO
 
-if sys.version_info[0] >= 3:
-    # Python 3
-    import io as StringIO
-else:
-    # Python 2
-    import StringIO as StringIO
+
+def test_is_text_or_byte():
+    '''Tests is text.'''
+    assert is_text("Text") is True
+    assert is_text(b"\xFF\xFF") is False
+    assert is_bytes(b"\xFF\xFF") is True
+    assert is_bytes("Text") is False
 
 
 def test_csv_to_dict():
     '''Tests csv to dict.'''
-    file_input = StringIO.StringIO("a,f\r\n111,222")
+    file_input = StringIO("a,f\r\n111,222")
     items = csv_to_dict(file_input)
     assert items[0]["a"] == "111"
     assert items[0]["f"] == "222"
@@ -110,16 +110,16 @@ class TestRetry:
 
     def test_cached_property(self):
         '''Tests retry decorator.'''
-        assert self.retries_func(3) == True
+        assert self.retries_func(3) is True
         self.retries = 0
-        assert self.retries_func(5) == False
+        assert self.retries_func(5) is False
 
 
-def test_byte_to_string():
+def test_bytes_to_hex():
     '''Tests byte <-> hex and hex <-> byte.'''
-    assert byte_to_string(b"\xFF") == "FF"
-    assert hex_to_byte(byte_to_string(b"\x4A")) == b"\x4A"
-    assert byte_to_string(hex_to_byte("4A")) == "4A"
+    assert bytes_to_hex(b"\xFF") == "FF"
+    assert hex_to_bytes(bytes_to_hex(b"\x4A")) == b"\x4A"
+    assert bytes_to_hex(hex_to_bytes("4A")) == "4A"
 
 
 def test_bytes_binary():
@@ -137,7 +137,7 @@ def test_hex_binary():
 def test_bin_integer():
     '''Tests bin <-> int conversion.'''
     hexstr = "11111110"
-    assert bin_to_integer(hexstr) == 254
-    assert bin_to_integer(hexstr, 0, 1) == 0
-    assert bin_to_integer(hexstr, 0, 2) == 2
-    assert bin_to_integer(hexstr, 0, 3) == 6
+    assert binary_to_int(hexstr) == 254
+    assert binary_to_int(hexstr, 0, 1) == 0
+    assert binary_to_int(hexstr, 0, 2) == 2
+    assert binary_to_int(hexstr, 0, 3) == 6

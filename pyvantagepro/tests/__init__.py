@@ -8,12 +8,3 @@
 
 '''
 from __future__ import unicode_literals
-
-# active logging for tests
-from ..logger import active_logger
-
-
-active_logger()
-
-
-from ..logger import LOGGER
