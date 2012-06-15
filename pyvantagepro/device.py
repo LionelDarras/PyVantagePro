@@ -108,7 +108,7 @@ class VantagePro2(object):
         LOGGER.error("Check ACK: BAD (%s != %s)" % (repr(wait_ack), repr(ack)))
         raise BadAckException()
 
-    @retry(tries=3, delay=0.5)
+    @retry(tries=3, delay=1)
     def read_from_eeprom(self, hex_address, size):
         '''Reads from EEPROM the `size` number of bytes starting at the
         `hex_address`. Results are given as hex strings.'''
@@ -246,8 +246,8 @@ class VantagePro2(object):
     @cached_property
     def timezone(self):
         '''Returns timezone offset as string.'''
-        offset, gmt = struct.unpack(b'HB', self.read_from_eeprom("14", 3))
-
+        data = self.read_from_eeprom("14", 3)
+        offset, gmt = struct.unpack(b'HB', data)
         if gmt == 1:
             return "GMT+%.2f" % (offset / 100)
         else:
