@@ -15,6 +15,7 @@ import struct
 from datetime import datetime
 from array import array
 
+from .compat import bytes
 from .logger import LOGGER
 from .utils import (cached_property, bytes_to_hex, Dict, bytes_to_binary,
                     binary_to_int)
@@ -62,7 +63,8 @@ class VantageProCRC(object):
     def checksum(self):
         '''Return CRC calc value from raw serial data.'''
         crc = 0
-        for byte in array(str('B'), self.data):
+        print (self.data)
+        for byte in array(b'B', bytes(self.data)):
             crc = (self.CRC_TABLE[((crc >> 8) ^ byte)] ^ ((crc & 0xFF) << 8))
         return crc
 
