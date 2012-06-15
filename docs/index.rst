@@ -51,6 +51,7 @@ Features
 * Getting some information about the station, such as date and firmware version.
 * Various types of connections are supported
 * Comes with a command-line script
+* Compatible with Python 2.6+ and 3.x
 
 
 Installation
