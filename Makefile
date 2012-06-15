@@ -12,8 +12,11 @@ test:
 pyflakes:
 	pyflakes ${PYFLAKES_WHITELIST}
 
-docs:
+doc:
 	cd docs; make html
+
+upload-doc:
+	python setup.py upload_sphinx
 
 pep:
 	pep8 --first pyvantagepro

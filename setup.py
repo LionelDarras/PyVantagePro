@@ -1,14 +1,14 @@
 # coding: utf8
-"""
+'''
     PyVantagePro
     ------------
 
-    Communication driver for VantagePro 2 station
+    Communication tools for the Davis VantagePro2 devices.
 
     :copyright: Copyright 2012 Salem Harrache and contributors, see AUTHORS.
     :license: GNU GPL v3.
 
-"""
+'''
 import sys
 import os
 from setuptools import setup, find_packages
@@ -38,7 +38,7 @@ setup(
     version='0.1',
     url='https://github.com/SalemHarrache/PyVantagePro',
     license='GNU GPL v3',
-    description='Communication driver for VantagePro 2 station',
+    description='Communication tools for the Davis VantagePro2 devices',
     long_description=README + '\n\n' + CHANGES,
     author='Salem Harrache',
     author_email='salem.harrache@gmail.com',
@@ -48,7 +48,7 @@ setup(
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)'
+        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
