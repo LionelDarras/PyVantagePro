@@ -3,8 +3,6 @@ PyVantagePro
 
 .. image:: https://secure.travis-ci.org/SalemHarrache/PyVantagePro.png?branch=master
 
-Communication tools for the Davis VantagePro2 devices.
-
 PyVantagePro is a python project which aims to make the communication with
 weather stations Davis VantagePro2 easier and funnier...i.e. more Pythonic.
 
@@ -15,9 +13,7 @@ In order to do so, it uses the basic methods `get_archives()`
 About configuration, it only uses `gettime()` and `settime()` because we are
 assuming that stations are already configured.
 
-.. note::
-    PyVantagePro uses the `PyLink <http://pypi.python.org/pypi/PyLink>`_ lib,
-    offers a universal communication interface with File-Like API.
+**Note:** PyVantagePro uses the `PyLink <http://pypi.python.org/pypi/PyLink>`_ lib, offers a universal communication interface with File-Like API.
 
 Examples
 --------
@@ -49,6 +45,7 @@ Features
 * Getting some information about the station, such as date and firmware version.
 * Various types of connections are supported
 * Comes with a command-line script
+* Compatible with Python 2.6+ and 3.x
 
 Documentation
 -------------
