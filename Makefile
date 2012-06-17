@@ -6,20 +6,27 @@ PYFLAKES_WHITELIST=$(shell find . -name "*.py" ! -path "./docs/*" \
                     ! -path "./.tox/*" ! -path "./pyvantagepro/__init__.py" \
                     ! -path "./pyvantagepro/compat.py")
 
+env:
+	virtualenv ./env
+	source ./env/bin/activate
+	pip install hg+https://bitbucket.org/birkenfeld/sphinx
+	pip install tox
+	pip install -e .
+
 test:
 	tox
 
 pyflakes:
 	pyflakes ${PYFLAKES_WHITELIST}
 
+pep:
+	pep8 --first pyvantagepro
+
 doc:
 	cd docs; make html
 
 upload-doc:
 	python setup.py upload_sphinx
-
-pep:
-	pep8 --first pyvantagepro
 
 clean:
 	git clean -Xfd
