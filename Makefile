@@ -6,7 +6,7 @@ PYFLAKES_WHITELIST=$(/bin/bash find . -name "*.py" ! -path "./docs/*" \
 
 env:
 	virtualenv ./env
-	/bin/bash -c 'source ./env/bin/activate ; pip install hg+https://bitbucket.org/birkenfeld/sphinx ; pip install tox ; pip install -e . '
+	/bin/bash -c 'source ./env/bin/activate ; pip install hg+https://bitbucket.org/birkenfeld/sphinx ; pip install tox ; pip install Sphinx-PyPI-upload ; pip install -e . '
 
 test:
 	tox
@@ -18,9 +18,9 @@ pep:
 	pep8 --first pyvantagepro
 
 doc:
-	cd docs; make html
+	cd docs; make site
 
-upload-doc:
+upload-doc: doc
 	python setup.py upload_sphinx
 
 clean:

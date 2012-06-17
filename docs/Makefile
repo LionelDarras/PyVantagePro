@@ -12,7 +12,7 @@ PAPEROPT_a4     = -D latex_paper_size=a4
 PAPEROPT_letter = -D latex_paper_size=letter
 ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
-.PHONY: help clean html epub latex latexpdf
+.PHONY: help clean html latex pdf all
 
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
@@ -38,3 +38,6 @@ latex:
 pdf: latex
 	make -C _build/latex all-pdf
 	@echo "pdflatex finished; the PDF files are in _build/latex."
+
+site: html pdf
+	mv ./_build/latex/PyVantagePro.pdf ./_build/html/PyVantagePro.pdf

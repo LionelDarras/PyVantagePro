@@ -345,7 +345,7 @@ There are several ways to contribute to the project:
 
 .. _`requests on github`: https://github.com/SalemHarrache/PyVantagePro/issues
 .. _`the repository`: https://github.com/SalemHarrache/PyVantagePro
-.. _AUTHORS: https://github.com/SalemHarrache/PyVantagePro/blob/master/AUTHORS
+.. _AUTHORS: https://github.com/SalemHarrache/PyVantagePro/blob/master/AUTHORS.rst
 
 
 Changelog
