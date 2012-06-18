@@ -1,10 +1,10 @@
-PyVPDriver is written and maintained by Salem Harrache and
+PyVantagePro is written and maintained by Salem Harrache and
 various contributors:
 
 Development Lead
 ````````````````
 
-- Salem Harrache <contact@salem.harrache.info>
+- Salem Harrache <salem@harrache.info>
 
 Patches and Suggestions
 ```````````````````````
