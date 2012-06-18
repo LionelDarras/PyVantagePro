@@ -62,14 +62,7 @@ def test_dict():
     d = Dict()
     d["f"] = "222"
     d["a"] = "111"
-    # sorteddict({'a': '111', 'f': '222'})
-    assert d.keys().index('a') == 0
-    assert d.keys().index('f') == 1
     d["b"] = "000"
-    assert d.keys().index('a') == 0
-    assert d.keys().index('b') == 1
-    assert d.keys().index('f') == 2
-
     assert "a" in d.filter(['a', 'b'])
     assert "b" in d.filter(['a', 'b'])
     assert "f" not in d.filter(['a', 'b'])

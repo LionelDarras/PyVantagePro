@@ -12,7 +12,6 @@ import sys
 import time
 import csv
 import binascii
-from blist import sorteddict
 
 from .compat import to_char, str, bytes, StringIO, is_py3
 
@@ -199,10 +198,10 @@ def dict_to_csv(items, delimiter, header):
 
 
 class Dict(object):
-    '''A sorted dict with somes additional methods.'''
+    '''A dict with somes additional methods.'''
     def __init__(self, initial_dict=None):
         initial_dict = initial_dict or {}
-        self.store = sorteddict(initial_dict)
+        self.store = dict(initial_dict)
 
     def __getitem__(self, key):
         return self.store[key]
@@ -239,12 +238,13 @@ class Dict(object):
 
         >>> mydict = Dict({"name":"foo", "firstname":"bar", "age":1})
         >>> mydict.filter(['age', 'name'])
-        sorteddict({'age': 1, 'name': 'foo'})
+        {'age': 1, 'name': 'foo'}
         '''
-        data = self.store.copy()
-        unused_keys = set(data.keys()) - set(keys)
-        for key in unused_keys:
-            del data[key]
+        data = {}
+        unused_keys = set(self.store.keys()) - set(keys)
+        keys = set(self.store.keys()) - unused_keys
+        for key in keys:
+            data[key] = self.store[key]
         return Dict(data)
 
     def to_csv(self, delimiter=',', header=True):
@@ -259,7 +259,7 @@ class Dict(object):
 
 
 class ListDict(list):
-    '''List of sorteddicts with somes additional methods.'''
+    '''List of dicts with somes additional methods.'''
 
     def to_csv(self, delimiter=',', header=True):
         '''Serialize list of dictionaries to csv.'''
@@ -275,10 +275,11 @@ class ListDict(list):
         '''
         items = ListDict()
         for item in self:
-            data = item.copy()
-            unused_keys = set(data.keys()) - set(keys)
+            data = {}
+            unused_keys = set(item.keys()) - set(keys)
+            keys = set(item.keys()) - unused_keys
             for key in unused_keys:
-                del data[key]
+                data[key] = item[key]
             items.append(data)
         return items
 

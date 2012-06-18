@@ -25,7 +25,6 @@ except:
 
 REQUIREMENTS = [
     'pylink',
-    'blist',
     'progressbar>=2.3',
 ]
 
