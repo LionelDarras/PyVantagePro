@@ -50,4 +50,4 @@ Features
 Documentation
 -------------
 
-See documentation here: http://packages.python.org/PyVantagePro
+See documentation here: http://pyvantagepro.readthedocs.org/en/latest/index.html
