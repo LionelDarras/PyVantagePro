@@ -321,6 +321,8 @@ API reference
 .. autoclass:: pyvantagepro.utils.ListDict
     :members: to_csv, filter, sorted_by
 
+.. autoexception:: pyvantagepro.device.NoDeviceException
+
 .. autoexception:: pyvantagepro.device.BadAckException
 
 .. autoexception:: pyvantagepro.device.BadCRCException
@@ -353,6 +355,8 @@ Changelog
 
 Version 0.1
 ~~~~~~~~~~~
+
+Released on 2012-06-14.
 
 - First properly tagged release.
 - Support VantagePro2 revB only.
