@@ -63,8 +63,7 @@ class VantageProCRC(object):
     def checksum(self):
         '''Return CRC calc value from raw serial data.'''
         crc = 0
-        print (self.data)
-        for byte in array(b'B', bytes(self.data)):
+        for byte in array(str('B'), bytes(self.data)):
             crc = (self.CRC_TABLE[((crc >> 8) ^ byte)] ^ ((crc & 0xFF) << 8))
         return crc
 
@@ -342,7 +341,7 @@ def unpack_dmp_date_time(date, time):
     if date != 0xffff and time != 0xffff:
         day = date & 0x1f                     # 5 bits
         month = (date >> 5) & 0x0f            # 4 bits
-        year = ((date >> 9) & 0x7f) + 2000   # 7 bits
+        year = ((date >> 9) & 0x7f) + 2000    # 7 bits
         hour, min_ = divmod(time, 100)
         return datetime(year, month, day, hour, min_)
 
