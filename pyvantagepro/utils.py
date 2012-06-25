@@ -239,6 +239,7 @@ class ListDict(list):
             items.append(item.filter(keys))
         return items
 
-    def sorted_by(self, key, reverse=False):
-        '''Returns list sorted by `key`.'''
-        return ListDict(sorted(self, key=lambda i: i[key], reverse=reverse))
+    def sorted_by(self, keyword, reverse=False):
+        '''Returns list sorted by `keyword`.'''
+        k = keyword
+        return ListDict(sorted(self, key=lambda i: i[k], reverse=reverse))
