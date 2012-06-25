@@ -51,6 +51,7 @@ class VantagePro2(object):
     data and parsing it into usable scalar values.
 
     :param url: A `PyLink` connection URL.
+    :param timeout: Set a read timeout value.
     '''
 
     # device reply commands
