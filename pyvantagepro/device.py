@@ -63,8 +63,9 @@ class VantagePro2(object):
     ESC = '\x1b'
     OK = '\n\rOK\n\r'
 
-    def __init__(self, url):
+    def __init__(self, url, timeout=10):
         self.link = link_from_url(url)
+        self.link.settimeout(timeout)
         self.link.open()
         self._check_revision()
 
@@ -158,7 +159,12 @@ class VantagePro2(object):
         :param stop_date: The stopping datetime record.
         '''
         generator = self._get_archives_generator(start_date, stop_date)
-        return ListDict(list(set(generator))).sorted_by("Datetime")
+        archives = ListDict()
+        dates = []
+        for item in generator:
+            if item['Datetime'] not in dates:
+                archives.append(item)
+        return archives
 
     def _get_archives_generator(self, start_date=None, stop_date=None):
         '''Get archive records generator until `start_date` and `stop_date`.'''
@@ -174,8 +180,7 @@ class VantagePro2(object):
         # I think that date_time_crc is incorrect...
         self.link.write(pack_dmp_date_time(start_date))
         # timeout must be at least 2 seconds
-        timeout = (self.link.timeout or 1) * 2
-        ack = self.link.read(len(self.ACK), timeout=timeout)
+        ack = self.link.read(len(self.ACK), timeout=2)
         if ack != self.ACK:
             raise BadAckException()
         # Read dump header and get number of pages

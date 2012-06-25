@@ -241,5 +241,5 @@ class ListDict(list):
 
     def sorted_by(self, keyword, reverse=False):
         '''Returns list sorted by `keyword`.'''
-        k = keyword
-        return ListDict(sorted(self, key=lambda i: i[k], reverse=reverse))
+        key_ = keyword
+        return ListDict(sorted(self, key=lambda k: k[key_], reverse=reverse))

@@ -193,8 +193,7 @@ def main():
 
     if args.debug:
         active_logger()
-        vp = VantagePro2(args.url)
-        vp.link.settimeout(args.timeout)
+        vp = VantagePro2(args.url, args.timeout)
         args.func(args, vp)
     else:
         try:
