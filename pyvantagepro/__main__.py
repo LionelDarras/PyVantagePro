@@ -110,7 +110,7 @@ def update_cmd(args, vp):
 def get_cmd_parser(cmd, subparsers, help, func):
     '''Make a subparser command.'''
     parser = subparsers.add_parser(cmd, help=help, description=help)
-    parser.add_argument('--timeout', default=1, type=float,
+    parser.add_argument('--timeout', default=10.0, type=float,
                         help="Connection link timeout")
     parser.add_argument('--debug', action="store_true", default=False,
                         help='Display log')
