@@ -57,8 +57,12 @@ if is_py2:
         class NullHandler(Handler):
             def emit(self, record):
                 pass
+
+        from ordereddict import OrderedDict
     else:
         from logging import NullHandler
+        from collections import OrderedDict
+
     from StringIO import StringIO
 
     def to_char(string):
@@ -74,6 +78,7 @@ if is_py2:
 
 elif is_py3:
     from logging import NullHandler
+    from collections import OrderedDict
     from io import StringIO
 
     def to_char(string):

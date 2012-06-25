@@ -124,9 +124,10 @@ def get_cmd_parser(cmd, subparsers, help, func):
 
 def main():
     '''Parse command-line arguments and execute VP2 command.'''
-    parser = argparse.ArgumentParser(prog='pyvantagepro',
-                        description='VantagePro 2 communication tools')
 
+    parser = argparse.ArgumentParser(prog='pyvantagepro',
+                                     description='VantagePro 2 communication'
+                                                 ' tools')
     parser.add_argument('--version', action='version',
                         version='PyVantagePro version %s' % VERSION,
                         help='Print PyVantagePro’s version number and exit.')
@@ -134,55 +135,57 @@ def main():
     subparsers = parser.add_subparsers(title='The PyVantagePro commands')
     # gettime command
     subparser = get_cmd_parser('gettime', subparsers,
-                        help='Print the current datetime of the station.',
-                        func=gettime_cmd)
+                               help='Print the current datetime of the'
+                                    ' station.',
+                               func=gettime_cmd)
 
     # settime command
     subparser = get_cmd_parser('settime', subparsers,
-                        help='Set the given datetime argument on the station.',
-                        func=settime_cmd)
+                               help='Set the given datetime argument on the'
+                                    ' station.',
+                               func=settime_cmd)
     subparser.add_argument('datetime', help='The chosen datetime value. '
                                             '(like : "%s")' % NOW)
 
     # getinfo command
     subparser = get_cmd_parser('getinfo', subparsers,
-                        help='Print VantagePro 2 information.',
-                        func=getinfo_cmd)
+                               help='Print VantagePro 2 information.',
+                               func=getinfo_cmd)
 
     # getarchives command
     subparser = get_cmd_parser('getarchives', subparsers,
-                        help='Extract archives data from the station between'
-                             ' start datetime and stop datetime.'
-                             'By default the entire contents of the data '
-                             'archive will be downloaded.',
-                        func=getarchives_cmd)
-    subparser.add_argument('--output', action="store", default=stdout,
-                        type=argparse.FileType('w', 0),
-                        help='Filename where output is written')
-    subparser.add_argument('--start', help="The beginning datetime record. "
-                                      "(like : \"%s\")" % NOW)
-    subparser.add_argument('--stop', help="The stopping datetime record. "
-                                      "(like : \"%s\")" % NOW)
-    subparser.add_argument('--delim', action="store", default=",",
-                        help='CSV char delimiter')
+                               help='Extract archives data from the station '
+                                    'between start datetime and stop datetime.'
+                                    'By default the entire contents of the '
+                                    'data archive will be downloaded.',
+                               func=getarchives_cmd)
+    subparser.add_argument('--output', action='store', default=stdout,
+                           type=argparse.FileType('w', 0),
+                           help='Filename where output is written')
+    subparser.add_argument('--start', help='The beginning datetime record. '
+                                           '(like : "%s")' % NOW)
+    subparser.add_argument('--stop', help='The stopping datetime record. '
+                                          '(like : "%s")' % NOW)
+    subparser.add_argument('--delim', action='store', default=",",
+                           help='CSV char delimiter')
 
     # getdata command
     subparser = get_cmd_parser('getdata', subparsers,
-                        help='Extract real-time data from the station.',
-                        func=getdata_cmd)
+                               help='Extract real-time data from the station.',
+                               func=getdata_cmd)
     subparser.add_argument('--output', action="store", default=stdout,
-                        type=argparse.FileType('w', 0),
-                        help='Filename where output is written')
+                           type=argparse.FileType('w', 0),
+                           help='Filename where output is written')
     subparser.add_argument('--delim', action="store", default=",",
-                        help='CSV char delimiter')
+                           help='CSV char delimiter')
 
     # update command
     subparser = get_cmd_parser('update', subparsers,
-                        help='Update CSV database records with getting '
-                             'automatically new archive records.',
-                        func=update_cmd)
+                               help='Update CSV database records with getting '
+                                    'automatically new archive records.',
+                               func=update_cmd)
     subparser.add_argument('--delim', action="store", default=",",
-                        help='CSV char delimiter')
+                           help='CSV char delimiter')
     subparser.add_argument('db', action="store", help='The CSV file database')
 
     # Parse argv arguments

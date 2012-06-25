@@ -1,6 +1,14 @@
 Changelog
 ---------
 
+Version 0.2
+~~~~~~~~~~~
+
+Released on 2012-06-20.
+
+- Remove blist from requirements
+- Minor bug fixes
+
 Version 0.1
 ~~~~~~~~~~~
 

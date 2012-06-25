@@ -13,7 +13,7 @@ import time
 import csv
 import binascii
 
-from .compat import to_char, str, bytes, StringIO, is_py3
+from .compat import to_char, str, bytes, StringIO, is_py3, OrderedDict
 
 
 def is_text(data):
@@ -197,41 +197,8 @@ def dict_to_csv(items, delimiter, header):
     return content
 
 
-class Dict(object):
+class Dict(OrderedDict):
     '''A dict with somes additional methods.'''
-    def __init__(self, initial_dict=None):
-        initial_dict = initial_dict or {}
-        self.store = dict(initial_dict)
-
-    def __getitem__(self, key):
-        return self.store[key]
-
-    def __setitem__(self, key, value):
-        self.store[key] = value
-
-    def __delitem__(self, key):
-        del self.store[key]
-
-    def copy(self):
-        return Dict(self)
-
-    def keys(self):
-        return self.store.keys()
-
-    def values(self):
-        return self.store.values()
-
-    def items(self):
-        return self.store.items()
-
-    def __contains__(self, key):
-        return key in self.store.keys()
-
-    def __iter__(self):
-        return iter(self.store)
-
-    def __len__(self):
-        return len(self.store)
 
     def filter(self, keys):
         '''Create a dict with only the following `keys`.
@@ -240,22 +207,16 @@ class Dict(object):
         >>> mydict.filter(['age', 'name'])
         {'age': 1, 'name': 'foo'}
         '''
-        data = {}
-        unused_keys = set(self.store.keys()) - set(keys)
-        keys = set(self.store.keys()) - unused_keys
+        data = Dict()
+        real_keys = set(self.keys()) - set(set(self.keys()) - set(keys))
         for key in keys:
-            data[key] = self.store[key]
-        return Dict(data)
+            if key in real_keys:
+                data[key] = self[key]
+        return data
 
     def to_csv(self, delimiter=',', header=True):
         '''Serialize list of dictionaries to csv.'''
-        return dict_to_csv([self.store], delimiter, header)
-
-    def __str__(self):
-        return "%s" % self.store.__str__()
-
-    def __repr__(self):
-        return self.store.__repr__()
+        return dict_to_csv([self], delimiter, header)
 
 
 class ListDict(list):
@@ -275,15 +236,9 @@ class ListDict(list):
         '''
         items = ListDict()
         for item in self:
-            data = {}
-            unused_keys = set(item.keys()) - set(keys)
-            keys = set(item.keys()) - unused_keys
-            for key in unused_keys:
-                data[key] = item[key]
-            items.append(data)
+            items.append(item.filter(keys))
         return items
 
-    def sorted_by(self, keyword, reverse=False):
-        '''Returns list sorted by `keyword`.'''
-        return ListDict(sorted(self, key=lambda k: k[keyword],
-                                     reverse=reverse))
+    def sorted_by(self, key, reverse=False):
+        '''Returns list sorted by `key`.'''
+        return ListDict(sorted(self, key=lambda i: i[key], reverse=reverse))

@@ -89,6 +89,7 @@ class DataParser(Dict):
     It provides a named fields interface, similiar to C structures.'''
 
     def __init__(self, data, data_format, order='='):
+        super(DataParser, self).__init__()
         self.fields, format_t = zip(*data_format)
         self.crc_error = False
         if "CRC" in self.fields:
@@ -99,7 +100,8 @@ class DataParser(Dict):
         self.raw_bytes = data
         # Unpacks data from `raw_bytes` and returns a dication of named fields
         data = self.struct.unpack_from(self.raw_bytes, 0)
-        super(DataParser, self).__init__(dict(zip(self.fields, data)))
+        self['Datetime'] = None
+        self.update(Dict(zip(self.fields, data)))
 
     @cached_property
     def raw(self):
@@ -292,15 +294,16 @@ class ArchiveDataParserRevB(DataParser):
         self['ETHour'] = self['ETHour'] / 1000
         self['WindHiDir'] = int(self['WindHiDir'] * 22.5)
         self['WindHiDir'] = int(self['WindAvgDir'] * 22.5)
-        self['SoilTemps'] = tuple(
-                (t - 90) for t in struct.unpack(b'4B', self['SoilTemps']))
+        SoilTempsValues = struct.unpack(b'4B', self['SoilTemps'])
+        self['SoilTemps'] = tuple((t - 90) for t in SoilTempsValues)
+
         self['ExtraHum'] = struct.unpack(b'2B', self['ExtraHum'])
         self['SoilMoist'] = struct.unpack(b'4B', self['SoilMoist'])
-        self['LeafTemps'] = tuple(
-                (t - 90) for t in struct.unpack(b'2B', self['LeafTemps']))
+        LeafTempsValues = struct.unpack(b'2B', self['LeafTemps'])
+        self['LeafTemps'] = tuple((t - 90) for t in LeafTempsValues)
         self['LeafWetness'] = struct.unpack(b'2B', self['LeafWetness'])
-        self['ExtraTemps'] = tuple(
-                (t - 90) for t in struct.unpack(b'3B', self['ExtraTemps']))
+        ExtraTempsValues = struct.unpack(b'3B', self['ExtraTemps'])
+        self['ExtraTemps'] = tuple((t - 90) for t in ExtraTempsValues)
         self.tuple_to_dict("SoilTemps")
         self.tuple_to_dict("LeafTemps")
         self.tuple_to_dict("ExtraTemps")
@@ -349,8 +352,7 @@ def unpack_dmp_date_time(date, time):
 def pack_datetime(dtime):
     '''Returns packed `dtime` with CRC.'''
     data = struct.pack(b'>BBBBBB', dtime.second, dtime.minute,
-                                       dtime.hour, dtime.day,
-                                       dtime.month, dtime.year - 1900)
+                       dtime.hour, dtime.day, dtime.month, dtime.year - 1900)
     return VantageProCRC(data).data_with_checksum
 
 

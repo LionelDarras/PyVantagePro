@@ -66,8 +66,17 @@ def test_dict():
     assert "a" in d.filter(['a', 'b'])
     assert "b" in d.filter(['a', 'b'])
     assert "f" not in d.filter(['a', 'b'])
-    new_d = d.filter(['a', 'f'])
-    assert "a,f\r\n111,222\r\n" == new_d.to_csv()
+    assert "a,f\r\n111,222\r\n" == d.filter(['a', 'f']).to_csv()
+    assert "f,b\r\n222,000\r\n" == d.filter(['f', 'b']).to_csv()
+
+
+def test_ordered_dict():
+    '''Tests DataDict.'''
+    d = Dict()
+    d["f"] = "222"
+    d["a"] = "111"
+    d["b"] = "000"
+    assert "f,a,b\r\n222,111,000\r\n" == d.to_csv()
 
 
 class TestCachedProperty:

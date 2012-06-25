@@ -1,13 +1,16 @@
+SHELL := /bin/bash
+
 # these files should pass pyflakes
 # exclude ./env/, which may contain virtualenv packages
-PYFLAKES_WHITELIST=$(/bin/bash find . -name "*.py" ! -path "./docs/*" \
-                    ! -path "./.tox/*" ! -path "./pyvantagepro/__init__.py" \
+PYFLAKES_WHITELIST=$(shell find . -name "*.py" ! -path "./docs/*" \
+                    ! -path "./.tox/*" ! -path "./env/*" \
+                    ! -path "./pyvantagepro/__init__.py" \
                     ! -path "./pyvantagepro/compat.py")
 
 env:
 	rm ./env -fr
 	virtualenv ./env
-	/bin/bash -c 'source ./env/bin/activate ; pip install pep8 ; \
+	shell -c 'source ./env/bin/activate ; pip install pep8 ; \
         pip install pyflakes ; \
         pip install hg+https://bitbucket.org/birkenfeld/sphinx ; \
         pip install tox ; pip install -e . '
