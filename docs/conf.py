@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Frozen-Flask documentation build configuration file, created by
-# sphinx-quickstart on Fri Dec 24 15:20:25 2010.
+# PyVantagePro documentation build configuration file
 #
 # This file is execfile()d with the current directory set to its containing
 # dir.
