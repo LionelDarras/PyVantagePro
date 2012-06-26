@@ -1,6 +1,16 @@
 Changelog
 ---------
 
+Version 0.3
+~~~~~~~~~~~
+
+Released on 2012-06-27.
+
+- Use ordereddict to order data fields (Datetime field first)
+- Fix a bug related to timeout
+- Set timeout to 10 sec by default
+
+
 Version 0.2
 ~~~~~~~~~~~
 
