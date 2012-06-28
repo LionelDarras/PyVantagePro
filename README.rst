@@ -22,7 +22,7 @@ Examples
 
     >>> from pyvantagepro import VantagePro2
     >>>
-    >>> device = VantagePro2('tcp:host-ip:port')
+    >>> device = VantagePro2.from_url('tcp:host-ip:port')
     >>> device.gettime()
     2012-06-13 16:44:56
     >>> data = device.get_current_data()
@@ -31,8 +31,8 @@ Examples
     >>> data.raw
     4C 4F 4F ... 0D E6 3B
     >>> data.filter(('TempIn', 'TempOut', 'SunRise', 'SunSet')).to_csv()
-    SunRise,SunSet,TempIn,TempOut
-    03:50,19:25,87.3,71.5
+    TempIn,TempOut,SunRise,SunSet
+    87.3,71.5,03:50,19:25
 
 
 Features
@@ -46,6 +46,21 @@ Features
 * Various types of connections are supported
 * Comes with a command-line script
 * Compatible with Python 2.6+ and 3.x
+
+
+Installation
+------------
+
+You can install, upgrade, uninstall PyVantagePro with these commands::
+
+  $ pip install pyvantagepro
+  $ pip install --upgrade pyvantagepro
+  $ pip uninstall pyvantagepro
+
+Or if you don't have pip::
+
+  $ easy_install pyvantagepro
+
 
 Documentation
 -------------

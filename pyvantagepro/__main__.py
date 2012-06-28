@@ -59,26 +59,30 @@ def getarchives(args, vp):
     if args.debug:
         return vp.get_archives(args.start, args.stop)
     from progressbar import ProgressBar, Percentage, Bar
-    records = ListDict()
+    archives = ListDict()
+    dates = []
     generator = vp._get_archives_generator(args.start, args.stop)
     widgets = ['Archives download: ', Percentage(), ' ', Bar()]
     pbar = ProgressBar(widgets=widgets, maxval=2600).start()
     for step, record in enumerate(generator):
         pbar.update(step)
-        records.append(record)
+        if record['Datetime'] not in dates:
+            archives.append(record)
+            dates.append(record['Datetime'])
     pbar.finish()
-    if not records:
+    if not archives:
         print("No new records were found﻿")
-    elif len(records) == 1:
+    elif len(archives) == 1:
         print("1 new record was found")
     else:
-        print("%d new records were found" % len(records))
-    return records
+        print("%d new records were found" % len(archives))
+    return archives.sorted_by('Datetime')
 
 
 def getarchives_cmd(args, vp):
     '''Getarchive command.'''
     args.delim = args.delim.decode("string-escape")
+    print args.start
     if args.start is not None:
         args.start = datetime.strptime(args.start, "%Y-%m-%d %H:%M")
     if args.stop is not None:
@@ -162,9 +166,9 @@ def main():
     subparser.add_argument('--output', action='store', default=stdout,
                            type=argparse.FileType('w', 0),
                            help='Filename where output is written')
-    subparser.add_argument('--start', help='The beginning datetime record. '
+    subparser.add_argument('--start', help='The beginning datetime record '
                                            '(like : "%s")' % NOW)
-    subparser.add_argument('--stop', help='The stopping datetime record. '
+    subparser.add_argument('--stop', help='The stopping datetime record '
                                           '(like : "%s")' % NOW)
     subparser.add_argument('--delim', action='store', default=",",
                            help='CSV char delimiter')

@@ -50,8 +50,7 @@ class VantagePro2(object):
     '''Communicates with the station by sending commands, reads the binary
     data and parsing it into usable scalar values.
 
-    :param url: A `PyLink` connection URL.
-    :param timeout: Set a read timeout value.
+    :param link: A `PyLink` connection.
     '''
 
     # device reply commands
@@ -71,6 +70,11 @@ class VantagePro2(object):
 
     @classmethod
     def from_url(cls, url, timeout=10):
+        ''' Get device from url.
+
+        :param url: A `PyLink` connection URL.
+        :param timeout: Set a read timeout value.
+        '''
         link = link_from_url(url)
         link.settimeout(timeout)
         return cls(link)
@@ -170,7 +174,8 @@ class VantagePro2(object):
         for item in generator:
             if item['Datetime'] not in dates:
                 archives.append(item)
-        return archives
+                dates.append(item['Datetime'])
+        return archives.sorted_by('Datetime')
 
     def _get_archives_generator(self, start_date=None, stop_date=None):
         '''Get archive records generator until `start_date` and `stop_date`.'''
@@ -229,10 +234,12 @@ class VantagePro2(object):
                     break
                 elif r_time <= stop_date:
                     if start_date < r_time:
+                        not_in_range = False
                         msg = "Record-%.4d - Datetime : %s" % (r_index, r_time)
                         LOGGER.info(msg)
                         yield record
                     else:
+                        not_in_range = True
                         LOGGER.info('The record is not in the datetime range')
                 else:
                     LOGGER.error('Invalid record detected')
@@ -240,7 +247,12 @@ class VantagePro2(object):
                     break
                 r_index += 1
             if finish:
-                LOGGER.info('Canceling download')
+                LOGGER.info('Canceling download : Finish')
+                self.link.write(self.ESC)
+                break
+            elif not_in_range:
+                msg = 'Page is not in the datetime range'
+                LOGGER.info('Canceling download : %s' % msg)
                 self.link.write(self.ESC)
                 break
             else:

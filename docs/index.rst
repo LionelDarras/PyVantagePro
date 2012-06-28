@@ -28,7 +28,7 @@ Examples::
 
     >>> from pyvantagepro import VantagePro2
     >>>
-    >>> device = VantagePro2('tcp:host-ip:port')
+    >>> device = VantagePro2.from_url('tcp:host-ip:port')
     >>> device.gettime()
     2012-06-13 16:44:56
     >>> data = device.get_current_data()
@@ -37,8 +37,8 @@ Examples::
     >>> data.raw
     4C 4F 4F ... 0D E6 3B
     >>> data.filter(('TempIn', 'TempOut', 'SunRise', 'SunSet')).to_csv()
-    SunRise,SunSet,TempIn,TempOut
-    03:50,19:25,87.3,71.5
+    TempIn,TempOut,SunRise,SunSet
+    87.3,71.5,03:50,19:25
 
 
 Features
@@ -309,7 +309,7 @@ API reference
 -------------
 
 .. autoclass:: VantagePro2
-    :members: get_archives, get_current_data, gettime, settime, timezone, firmware_date, firmware_version, archive_period, diagnostics
+    :members: from_url, get_archives, get_current_data, gettime, settime, timezone, firmware_date, firmware_version, archive_period, diagnostics
 
     .. automethod:: wake_up()
     .. automethod:: send(data, wait_ack=None, timeout=None)
@@ -350,15 +350,4 @@ There are several ways to contribute to the project:
 .. _AUTHORS: https://github.com/SalemHarrache/PyVantagePro/blob/master/AUTHORS.rst
 
 
-Changelog
----------
-
-Version 0.1
-~~~~~~~~~~~
-
-Released on 2012-06-14.
-
-- First properly tagged release.
-- Support VantagePro2 revB only.
-- Parsing binary data into dict and list of dict.
-- Command-line script.
+.. include:: ../CHANGES.rst

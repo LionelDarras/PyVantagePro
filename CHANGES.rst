@@ -1,10 +1,19 @@
 Changelog
 ---------
 
+Version 0.3.1
+~~~~~~~~~~~~~
+
+Released on 2012-06-28.
+
+- remove duplicate records
+- sort records by Datetime field
+
+
 Version 0.3
 ~~~~~~~~~~~
 
-Released on 2012-06-27.
+Released on 2012-06-26.
 
 - Use ordereddict to order data fields (Datetime field first)
 - Fix a bug related to timeout

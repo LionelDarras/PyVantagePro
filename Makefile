@@ -10,9 +10,8 @@ PYFLAKES_WHITELIST=$(shell find . -name "*.py" ! -path "./docs/*" \
 env:
 	rm ./env -fr
 	virtualenv ./env
-	shell -c 'source ./env/bin/activate ; pip install pep8 ; \
+	/bin/bash -c 'source ./env/bin/activate ; pip install pep8 ; \
         pip install pyflakes ; \
-        pip install hg+https://bitbucket.org/birkenfeld/sphinx ; \
         pip install tox ; pip install -e . '
 test:
 	tox
