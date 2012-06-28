@@ -64,11 +64,16 @@ class VantagePro2(object):
     ESC = '\x1b'
     OK = '\n\rOK\n\r'
 
-    def __init__(self, url, timeout=10):
-        self.link = link_from_url(url)
-        self.link.settimeout(timeout)
+    def __init__(self, link):
+        self.link = link
         self.link.open()
         self._check_revision()
+
+    @classmethod
+    def from_url(cls, url, timeout=10):
+        link = link_from_url(url)
+        link.settimeout(timeout)
+        return cls(link)
 
     @retry(tries=3, delay=1)
     def wake_up(self):
@@ -302,8 +307,8 @@ class VantagePro2(object):
 
     def _check_revision(self):
         '''Check firmware date and get data format revision.'''
-         #Rev "A" firmware, dated before April 24, 2002 uses the old format.
-         #Rev "B" firmware dated on or after April 24, 2002
+        #Rev "A" firmware, dated before April 24, 2002 uses the old format.
+        #Rev "B" firmware dated on or after April 24, 2002
         date = datetime(2002, 4, 24).date()
         self.RevA = self.RevB = True
         if self.firmware_date < date:

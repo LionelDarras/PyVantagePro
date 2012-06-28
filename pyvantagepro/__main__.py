@@ -193,12 +193,11 @@ def main():
 
     if args.debug:
         active_logger()
-        vp = VantagePro2(args.url, args.timeout)
+        vp = VantagePro2.from_url(args.url, args.timeout)
         args.func(args, vp)
     else:
         try:
-            vp = VantagePro2(args.url)
-            vp.link.settimeout(args.timeout)
+            vp = VantagePro2.from_url(args.url, args.timeout)
             args.func(args, vp)
         except Exception as e:
             parser.error('%s' % e)
