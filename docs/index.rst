@@ -33,7 +33,7 @@ Examples::
     2012-06-13 16:44:56
     >>> data = device.get_current_data()
     >>> data['TempIn']
-    87.1
+    87.3
     >>> data.raw
     4C 4F 4F ... 0D E6 3B
     >>> data.filter(('TempIn', 'TempOut', 'SunRise', 'SunSet')).to_csv()

@@ -28,7 +28,8 @@ sys.path.append(os.path.abspath('_themes'))
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx',
+              'sphinx.ext.viewcode', 'sphinx.ext.doctest']
 
 #intersphinx_mapping = {'pylink': ('http://pypi.python.org/pypi/PyLink', None)}
 
@@ -193,7 +194,7 @@ latex_font_size = '12pt'
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'PyVantagePro.tex', u'PyVantagePro Documentation',
-   u'Salem Harrache', 'manual'),
+   u'Salem Harrache', 'howto'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -217,7 +218,16 @@ latex_logo = '_static/pyvantagepro.jpg'
 #latex_appendices = []
 
 # If false, no module index is generated.
-#latex_domain_indices = True
+latex_domain_indices = False
+
+
+latex_elements = {
+'tableofcontents':"",
+'preamble': '''%
+  \pagestyle{plain}
+  \pagenumbering{arabic}
+''',
+}
 
 
 # -- Options for manual page output --------------------------------------------
