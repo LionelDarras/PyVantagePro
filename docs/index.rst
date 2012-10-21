@@ -5,6 +5,19 @@ PyVantagePro
 
 .. module:: pyvantagepro
 
+About
+-----
+
+This project was conducted by the laboratory `ISTerre Grenoble`_ (FR) as part
+of the development of an observation network `OMIV﻿`_ (Observatoire
+Multi-disciplinaires des Instabilités de Versants)
+
+.. _`ISTerre Grenoble`: http://isterre.fr/?lang=en
+.. _`OMIV﻿`: http://omiv.osug.fr/
+
+Descritpion
+-----------
+
 PyVantagePro is a python project which aims to make the communication with
 weather stations Davis VantagePro2 easier and funnier...i.e. more pythonic.
 
