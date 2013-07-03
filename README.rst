@@ -1,7 +1,14 @@
 PyVantagePro
 ============
 
-.. image:: https://secure.travis-ci.org/SalemHarrache/PyVantagePro.png?branch=master
+.. image:: https://pypip.in/v/PyVantagePro/badge.png
+   :target: https://crate.io/package/PyVantagePro
+.. image:: https://pypip.in/d/PyVantagePro/badge.png
+   :target: https://crate.io/packages/PyVantagePro
+.. image:: https://travis-ci.org/SalemHarrache/PyVantagePro.png?branch=master
+   :target: https://travis-ci.org/SalemHarrache/PyVantagePro
+
+
 
 PyVantagePro is a python project which aims to make the communication with
 weather stations Davis VantagePro2 easier and funnier...i.e. more Pythonic.
