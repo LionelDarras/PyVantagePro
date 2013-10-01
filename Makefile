@@ -35,3 +35,6 @@ dist:
 
 upload:
 	python setup.py sdist upload
+
+
+.PHONY: dist clean env
