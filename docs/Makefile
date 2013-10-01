@@ -14,6 +14,10 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
 .PHONY: help clean html latex pdf all
 
+all: html pdf
+	mv ./_build/latex/PyVantagePro.pdf ./_build/html/PyVantagePro.pdf
+
+
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
 	@echo "  html       to make standalone HTML files"
@@ -38,6 +42,3 @@ latex:
 pdf: latex
 	make -C _build/latex all-pdf
 	@echo "pdflatex finished; the PDF files are in _build/latex."
-
-site: html pdf
-	mv ./_build/latex/PyVantagePro.pdf ./_build/html/PyVantagePro.pdf

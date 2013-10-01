@@ -292,8 +292,10 @@ class ArchiveDataParserRevB(DataParser):
         self['TempIn'] = self['TempIn'] / 10
         self['UV'] = self['UV'] / 10
         self['ETHour'] = self['ETHour'] / 1000
+        '''
         self['WindHiDir'] = int(self['WindHiDir'] * 22.5)
-        self['WindHiDir'] = int(self['WindAvgDir'] * 22.5)
+        self['WindAvgDir'] = int(self['WindAvgDir'] * 22.5)
+        '''
         SoilTempsValues = struct.unpack(b'4B', self['SoilTemps'])
         self['SoilTemps'] = tuple((t - 90) for t in SoilTempsValues)
 

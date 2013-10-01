@@ -89,6 +89,9 @@ class VantagePro2(object):
         if wait_ack == ack:
             LOGGER.info("Check ACK: OK (%s)" % (repr(ack)))
             return True
+        #Sometimes we have a 1byte shift from Vantage Pro and that's why wake up doesn't work anymore
+        #We just shift another 1byte to be aligned in the serial buffer again.
+        self.link.read(1)
         LOGGER.error("Check ACK: BAD (%s != %s)" % (repr(wait_ack), repr(ack)))
         raise NoDeviceException()
 
