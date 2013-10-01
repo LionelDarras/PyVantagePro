@@ -9,6 +9,7 @@
     :license: GNU GPL v3.
 
 '''
+import re
 import sys
 import os
 from setuptools import setup, find_packages
@@ -35,9 +36,16 @@ if sys.version_info < (2, 7) or (3,) <= sys.version_info < (3, 2):
     # In the stdlib from 2.7:
     REQUIREMENTS.append('argparse')
 
+
+with open(os.path.join(os.path.dirname(__file__), 'pyvantagepro',
+                        '__init__.py')) as init_py:
+    release = re.search("VERSION = '([^']+)'", init_py.read()).group(1)
+# The short X.Y version.
+version = release.rstrip('dev')
+
 setup(
     name='PyVantagePro',
-    version='0.3.1',
+    version=version,
     url='https://github.com/SalemHarrache/PyVantagePro',
     license='GNU GPL v3',
     description='Communication tools for the Davis VantagePro2 devices',
