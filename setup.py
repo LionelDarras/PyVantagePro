@@ -26,7 +26,7 @@ except:
 
 REQUIREMENTS = [
     'pylink',
-    'progressbar>=2.3',
+    'progressbar-latest',
 ]
 
 if sys.version_info < (2, 7):
