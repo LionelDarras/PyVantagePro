@@ -13,10 +13,10 @@ env:
 	/bin/bash -c 'source ./env/bin/activate ; pip install pep8 ; \
     pip install pyflakes ; \
     pip install hg+https://bitbucket.org/birkenfeld/sphinx ; \
-    pip install tox ; pip install -e . '
+    pip install detox ; pip install -e . '
 
 test:
-	tox
+	detox
 
 pyflakes:
 	pyflakes ${PYFLAKES_WHITELIST}
