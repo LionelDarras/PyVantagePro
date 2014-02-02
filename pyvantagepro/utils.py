@@ -119,7 +119,7 @@ def hex_to_bytes(hexstr):
 def byte_to_binary(byte):
     '''Convert byte to binary string representation.
     E.g.
-    >>> hex_to_binary_string("\x4A")
+    >>> byte_to_binary("\x4A")
     '0000000001001010'
     '''
     return ''.join(str((byte & (1 << i)) and 1) for i in reversed(range(8)))
@@ -128,7 +128,7 @@ def byte_to_binary(byte):
 def bytes_to_binary(values):
     '''Convert bytes to binary string representation.
     E.g.
-    >>> hex_to_binary_string(b"\x4A\xFF")
+    >>> bytes_to_binary(b"\x4A\xFF")
     '0100101011111111'
     '''
     if is_py3:
@@ -145,7 +145,7 @@ def bytes_to_binary(values):
 def hex_to_binary(hexstr):
     '''Convert hexadecimal string to binary string representation.
     E.g.
-    >>> hex_to_binary_string("FF")
+    >>> hex_to_binary("FF")
     '11111111'
     '''
     if is_py3:
