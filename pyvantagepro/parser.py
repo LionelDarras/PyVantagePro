@@ -130,8 +130,8 @@ class LoopDataParserRevB(DataParser):
     # Loop data format (RevB)
     LOOP_FORMAT = (
         ('LOO', '3s'), ('BarTrend', 'B'), ('PacketType', 'B'),
-        ('NextRec', 'H'), ('Barometer', 'H'), ('TempIn', 'h'),
-        ('HumIn', 'B'), ('TempOut', 'h'), ('WindSpeed', 'B'),
+        ('NextRec', 'H'), ('Barometer', 'H'), ('TempIn', 'H'),
+        ('HumIn', 'B'), ('TempOut', 'H'), ('WindSpeed', 'B'),
         ('WindSpeed10Min', 'B'), ('WindDir', 'H'), ('ExtraTemps', '7s'),
         ('SoilTemps', '4s'), ('LeafTemps', '4s'), ('HumOut', 'B'),
         ('HumExtra', '7s'), ('RainRate', 'H'), ('UV', 'B'),
@@ -266,10 +266,10 @@ class ArchiveDataParserRevB(DataParser):
     real-time data that can be read from the Davis VantagePro2.'''
 
     ARCHIVE_FORMAT = (
-        ('DateStamp',      'H'), ('TimeStamp',   'H'), ('TempOut',      'h'),
-        ('TempOutHi',      'h'), ('TempOutLow',  'h'), ('RainRate',     'H'),
+        ('DateStamp',      'H'), ('TimeStamp',   'H'), ('TempOut',      'H'),
+        ('TempOutHi',      'H'), ('TempOutLow',  'H'), ('RainRate',     'H'),
         ('RainRateHi',     'H'), ('Barometer',   'H'), ('SolarRad',     'H'),
-        ('WindSamps',      'H'), ('TempIn',      'h'), ('HumIn',        'B'),
+        ('WindSamps',      'H'), ('TempIn',      'H'), ('HumIn',        'B'),
         ('HumOut',         'B'), ('WindAvg',     'B'), ('WindHi',       'B'),
         ('WindHiDir',      'B'), ('WindAvgDir',  'B'), ('UV',           'B'),
         ('ETHour',         'B'), ('SolarRadHi',  'H'), ('UVHi',         'B'),
