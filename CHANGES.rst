@@ -1,6 +1,16 @@
 Changelog
 ---------
 
+Version 0.3.2
+~~~~~~~~~~~~~
+
+Released on 2014-02-02.
+
+- Added python3.3 and pypy support
+- Use detox for parallel multienv tests
+- Corrected WindAvgDir and WindHiDir
+- Added one byte shift if wake-up is not working
+
 Version 0.3.1
 ~~~~~~~~~~~~~
 
