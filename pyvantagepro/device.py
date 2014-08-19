@@ -12,7 +12,7 @@
 from __future__ import division, unicode_literals
 import struct
 from datetime import datetime, timedelta
-from pylink import link_from_url
+from pylink import link_from_url, SerialLink
 
 from .logger import LOGGER
 from .utils import (cached_property, retry, bytes_to_hex,
@@ -76,6 +76,17 @@ class VantagePro2(object):
         :param timeout: Set a read timeout value.
         '''
         link = link_from_url(url)
+        link.settimeout(timeout)
+        return cls(link)
+
+    @classmethod
+    def from_serial(cls, tty, baud, timeout=10):
+        ''' Get device from serial port.
+
+        :param url: A `PyLink` connection URL.
+        :param timeout: Set a read timeout value.
+        '''
+        link = SerialLink(tty, baud)
         link.settimeout(timeout)
         return cls(link)
 
