@@ -82,7 +82,6 @@ def getarchives(args, vp):
 def getarchives_cmd(args, vp):
     '''Getarchive command.'''
     args.delim = args.delim.decode("string-escape")
-    print args.start
     if args.start is not None:
         args.start = datetime.strptime(args.start, "%Y-%m-%d %H:%M")
     if args.stop is not None:
